@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proyecto Ulises - Acceso</title>
+    
+    <!-- NUEVAS FUENTES: Playfair Display (Títulos) y Lato (Textos) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;0,900;1,400&family=Playfair+Display:ital,wght@0,600;0,800;0,900;1,600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* NUEVA PALETA DE COLORES "LA ODISEA" */
+            --bg-parchment: #F5F4EF;
+            --bg-parchment-dark: #E8E2D2;
+            --navy-dark: #0F2035;
+            --navy-light: #1B365D;
+            --gold-primary: #C5A059;
+            --gold-light: #E6C875;
+            --text-dark: #112B47;
+            --text-gray: #5C6E80;
+            --accent-red: #8B3A3A;
+            --silver: #8A9AAB;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            /* FONDO DE IMAGEN: Pergamino Blueprint */
+            background-color: var(--bg-parchment);
+            background-image: url('img/Background.webp'); /* REEMPLAZA CON TU IMAGEN */
+            background-size: cover;
+            background-position: center;
+            font-family: 'Lato', sans-serif;
+            min-height: 100vh;
+            width: 100vw;
+            overflow-y: auto;
+            overflow-x: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        h1, h2, h3, .serif-text {
+            font-family: 'Playfair Display', serif;
+        }
+
+        /* Contenedor principal y Marco */
+        .game-container {
+            position: relative;
+            width: 100%;
+            max-width: 1600px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Si tienes el marco naval exportado como PNG transparente */
+        .frame-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-image: url('img/Fondo.webp'); /* REEMPLAZA CON TU IMAGEN */
+            background-size: 100% 100%;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        /* --- LOGO / TÍTULO SUPERIOR --- */
+        .header-titles {
+            text-align: center;
+            margin-bottom: 40px;
+            z-index: 10;
+        }
+        .title-main {
+            font-size: 64px; font-weight: 900; color: #FFFFFF;
+            text-transform: uppercase; letter-spacing: 4px; margin: 0;
+            text-shadow: 0 5px 15px rgba(0,0,0,0.9), 0 0 30px rgba(197, 160, 89, 0.8), 2px 2px 0px rgba(15, 32, 53, 0.8);
+        }
+        .title-sub {
+            font-size: 28px; font-weight: 700; color: var(--gold-primary);
+            margin: 5px 0 35px; opacity: 1;
+            text-shadow: 0 4px 12px rgba(0,0,0,0.9), 1px 1px 2px rgba(0,0,0,1);
+        }
+
+        @media (max-width: 768px) {
+            .title-main { font-size: 32px; letter-spacing: 2px; }
+            .title-sub { font-size: 18px; margin-bottom: 20px; }
+        }
+
+        /* --- PANELES ESTILO ODISEA (Placas con bordes y remaches) --- */
+        .odyssey-panel {
+            background: rgba(245, 244, 239, 0.95);
+            border: 2px solid var(--navy-light);
+            padding: 40px;
+            position: relative;
+            box-shadow: 0 15px 35px rgba(15, 32, 53, 0.2);
+            z-index: 10;
+            width: 90%;
+            max-width: 650px;
+            text-align: center;
+        }
+
+        @media (max-width: 480px) {
+            .odyssey-panel { padding: 25px 20px; }
+        }
+        
+        /* Borde interior doble */
+        .odyssey-panel::before {
+            content: ''; position: absolute;
+            top: 6px; left: 6px; right: 6px; bottom: 6px;
+            border: 1px solid var(--navy-light);
+            pointer-events: none;
+        }
+
+        /* Remaches en las esquinas (Hechos con CSS para evitar cargar más imágenes) */
+        .rivet {
+            position: absolute; width: 10px; height: 10px;
+            background: var(--gold-primary); border-radius: 50%;
+            border: 1px solid #8c6d32; box-shadow: inset 1px 1px 2px rgba(255,255,255,0.5), 1px 1px 2px rgba(0,0,0,0.4);
+        }
+        .r-tl { top: 12px; left: 12px; } .r-tr { top: 12px; right: 12px; }
+        .r-bl { bottom: 12px; left: 12px; } .r-br { bottom: 12px; right: 12px; }
+
+        .panel-title {
+            font-size: 28px; font-weight: 800; color: var(--navy-dark);
+            margin-bottom: 30px; text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        /* --- INPUTS --- */
+        .input-group { width: 100%; margin-bottom: 25px; position: relative; text-align: left;}
+        .input-label { font-size: 14px; font-weight: 700; color: var(--text-gray); margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 1px;}
+        
+        .email-input {
+            width: 100%; padding: 15px 15px 15px 20px; 
+            border: 2px solid var(--silver); background: #fff;
+            font-size: 18px; font-weight: 700; color: var(--navy-dark); outline: none; transition: 0.3s;
+            font-family: 'Lato', sans-serif;
+        }
+        .email-input:focus { border-color: var(--gold-primary); box-shadow: 0 0 10px rgba(197, 160, 89, 0.3);}
+        
+        .dropdown {
+            position: absolute; top: 100%; left: 0; width: 100%; background: #fff;
+            border: 2px solid var(--gold-primary); border-top: none;
+            padding: 12px 20px; font-size: 16px; font-weight: 700; color: var(--navy-dark);
+            display: none; cursor: pointer; z-index: 20; box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+        }
+
+        /* --- FICHA TRIPULANTE --- */
+        .ficha-card {
+            width: 100%; background: rgba(255,255,255,0.6); 
+            padding: 15px 20px; display: flex; align-items: center; gap: 20px; 
+            margin-bottom: 30px; border: 1px solid var(--silver);
+            transition: 0.3s; position: relative;
+        }
+        .ficha-avatar {
+            width: 70px; height: 70px; background: #E8E2D2; border-radius: 50%; 
+            border: 2px solid var(--navy-light); display: flex; justify-content: center; align-items: center; 
+            overflow: hidden; box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .ficha-avatar img { width: 100%; height: 100%; object-fit: cover; display: none; }
+        .ficha-avatar span { font-size: 30px; color: var(--silver); } /* Icono por defecto */
+
+        .ficha-info { flex: 1; text-align: left;}
+        .ficha-name { font-size: 22px; font-weight: 800; color: var(--navy-dark); margin-bottom: 4px; font-family: 'Playfair Display', serif;}
+        .ficha-role { font-size: 14px; font-weight: 700; color: var(--text-gray); }
+        
+        .ficha-check {
+            width: 30px; height: 30px; background: var(--gold-primary); border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; color: #fff; font-weight: bold;
+            opacity: 0; transition: 0.3s; transform: scale(0.5); border: 2px solid #fff;
+        }
+
+        /* --- BOTÓN PRINCIPAL --- */
+        .btn-access {
+            background: linear-gradient(180deg, var(--gold-light) 0%, var(--gold-primary) 100%); 
+            border: 2px solid var(--navy-dark);
+            padding: 15px 40px; font-size: 18px; font-weight: 900; color: var(--navy-dark); 
+            text-transform: uppercase; letter-spacing: 1px;
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.5), 0 5px 15px rgba(17, 43, 71, 0.3);
+            cursor: pointer; transition: 0.2s; width: 100%; font-family: 'Lato', sans-serif;
+            opacity: 0.5; pointer-events: none;
+        }
+        .btn-access.active { opacity: 1; pointer-events: auto; }
+        .btn-access.active:hover { background: linear-gradient(180deg, #F2D06B 0%, #D4AF37 100%); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(17, 43, 71, 0.4); }
+
+        /* --- MODAL DE SELECCIÓN DE AVATARES --- */
+        .avatar-gallery {
+            display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px;
+            max-height: 250px; overflow-y: auto; padding: 10px; margin-bottom: 25px;
+            background: rgba(255,255,255,0.5); border: 1px solid var(--silver);
+        }
+
+        @media (max-width: 768px) {
+            .avatar-gallery { grid-template-columns: repeat(4, 1fr); }
+        }
+        @media (max-width: 480px) {
+            .avatar-gallery { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+            .avatar-option { width: 60px; height: 60px; }
+        }
+        .avatar-option {
+            width: 70px; height: 70px; cursor: pointer; transition: 0.3s;
+            border: 2px solid transparent; border-radius: 50%; overflow: hidden;
+        }
+        .avatar-option img { width: 100%; height: 100%; object-fit: cover; }
+        .avatar-option:hover { transform: scale(1.1); border-color: var(--silver); }
+        .avatar-option.selected { border-color: var(--gold-primary); box-shadow: 0 0 15px rgba(197, 160, 89, 0.6); }
+
+        /* --- VIDEO DE FONDO Y BOTON DE INICIO --- */
+        .bg-video {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            object-fit: cover; z-index: 0; opacity: 0.85; pointer-events: none;
+        }
+
+        .btn-start {
+            background: linear-gradient(180deg, var(--gold-light) 0%, var(--gold-primary) 100%); 
+            border: 4px solid var(--navy-dark); border-radius: 12px;
+            padding: 20px 60px; font-size: 24px; font-weight: 900; color: var(--navy-dark); 
+            text-transform: uppercase; letter-spacing: 2px;
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.5), 0 10px 25px rgba(15, 32, 53, 0.6);
+            cursor: pointer; transition: 0.3s; font-family: 'Lato', sans-serif;
+            z-index: 20; position: relative;
+        }
+        @media (max-width: 768px) {
+            .btn-start { padding: 15px 40px; font-size: 18px; }
+        }
+        .btn-start:hover {
+            background: linear-gradient(180deg, #F2D06B 0%, #D4AF37 100%); 
+            transform: translateY(-5px) scale(1.02); box-shadow: 0 15px 35px rgba(15, 32, 53, 0.8);
+        }
+
+    </style>
+</head>
+<body>
+
+<!-- Video Submarino/Odisea de Fondo -->
+<video id="bgVideo" class="bg-video" autoplay loop muted playsinline>
+    <source src="img/Video_Ulises.mp4" type="video/mp4">
+</video>
+
+<div class="game-container">
+    
+    <!-- Marco Decorativo (Si lo tienes exportado, si no, puedes borrar esta línea) -->
+    <div class="frame-overlay"></div>
+
+    <!-- Títulos -->
+    <div class="header-titles">
+        <h1 class="title-main">Proyecto Ulises</h1>
+        <h2 class="title-sub serif-text">Nuestra Travesía hacia el Futuro</h2>
+    </div>
+
+    <!-- Botón de Inicio Central -->
+    <button class="btn-start" id="btnStart">Comenzar Travesía</button>
+
+    <!-- Panel Modal de Login -->
+    <div class="odyssey-panel" id="loginPanel" style="display: none;">
+        <div class="rivet r-tl"></div><div class="rivet r-tr"></div>
+        <div class="rivet r-bl"></div><div class="rivet r-br"></div>
+
+        <h2 class="panel-title">Manifiesto de Embarque</h2>
+
+        <div class="input-group">
+            <label class="input-label">Ingresa tu Correo Corporativo</label>
+            <input type="email" id="emailInput" class="email-input" placeholder="ejemplo@pjportland.cl" autocomplete="off">
+            <div id="dropdown" class="dropdown"></div>
+        </div>
+
+        <div class="input-group">
+            <label class="input-label">Identificación de Tripulante</label>
+            <div class="ficha-card" id="fichaCard">
+                <div class="ficha-avatar">
+                    <span id="defaultAvatarIcon">⚓</span>
+                    <img id="fichaAvatarImg" src="" alt="Avatar">
+                </div>
+                <div class="ficha-info">
+                    <div class="ficha-name" id="fichaName">---</div>
+                    <div class="ficha-role" id="fichaRole">Esperando identificación...</div>
+                </div>
+                <div class="ficha-check" id="fichaCheck">✓</div>
+            </div>
+        </div>
+
+        <button class="btn-access" id="btnAccess">Iniciar Travesía</button>
+    </div>
+
+    <!-- Modal de Personalización (Aparece tras validar el correo si no tiene avatar) -->
+    <div class="odyssey-panel" id="profilePanel" style="display: none; position: absolute;">
+        <div class="rivet r-tl"></div><div class="rivet r-tr"></div>
+        <div class="rivet r-bl"></div><div class="rivet r-br"></div>
+
+        <h2 class="panel-title">Registra tu Identidad</h2>
+        <p style="color: var(--text-gray); margin-bottom: 20px; font-style: italic;">Selecciona el retrato que te representará en esta travesía.</p>
+        
+        <div class="input-group">
+            <label class="input-label">Tu Alias o Apodo Náutico</label>
+            <input type="text" id="aliasInput" class="email-input" placeholder="Ej: Capitán Trueno, Vigía del Sur..." maxlength="20">
+        </div>
+
+        <label class="input-label">Selecciona tu Avatar</label>
+        <div class="avatar-gallery" id="avatarGallery">
+            <!-- REEMPLAZA ESTOS SRC CON LOS NOMBRES REALES DE TUS AVATARES EN LA CARPETA IMG -->
+            <div class="avatar-option" data-avatar="img/Avatar01.webp"><img src="img/Avatar01.webp" alt="Avatar 1"></div>
+            <div class="avatar-option" data-avatar="img/Avatar02.webp"><img src="img/Avatar02.webp" alt="Avatar 2"></div>
+            <div class="avatar-option" data-avatar="img/Avatar03.webp"><img src="img/Avatar03.webp" alt="Avatar 3"></div>
+            <div class="avatar-option" data-avatar="img/Avatar04.webp"><img src="img/Avatar04.webp" alt="Avatar 4"></div>
+            <div class="avatar-option" data-avatar="img/Avatar05.webp"><img src="img/Avatar05.webp" alt="Avatar 5"></div>
+            <div class="avatar-option" data-avatar="img/Avatar06.webp"><img src="img/Avatar06.webp" alt="Avatar 6"></div>
+            <div class="avatar-option" data-avatar="img/Avatar07.webp"><img src="img/Avatar07.webp" alt="Avatar 7"></div>
+            <div class="avatar-option" data-avatar="img/Avatar08.webp"><img src="img/Avatar08.webp" alt="Avatar 8"></div>            
+            <div class="avatar-option" data-avatar="img/Avatar09.webp"><img src="img/Avatar09.webp" alt="Avatar 9"></div>
+            <div class="avatar-option" data-avatar="img/Avatar10.webp"><img src="img/Avatar10.webp" alt="Avatar 10"></div>                        
+            
+            <!-- Duplica esta línea para añadir los 18 avatares que tienes -->
+        </div>
+
+        <button class="btn-access active" id="btnSaveProfile">Zarpar</button>
+    </div>
+
+</div>
+
+<!-- SCRIPT DE LÓGICA (Se mantiene igual, solo cambia IDs para referenciar imágenes) -->
+<script src="scripts/core.js"></script>
+<script>
+    let tripulantes = [];
+    let currentUser = null;
+    let currentRole = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Establecer el video a cámara lenta (50%)
+        const bgVideo = document.getElementById('bgVideo');
+        if (bgVideo) bgVideo.playbackRate = 0.5;
+
+        tripulantes = await Core.loadAppData();
+    });
+
+    const btnStart = document.getElementById('btnStart');
+    const loginPanel = document.getElementById('loginPanel');
+
+    // Manejar el botón Comenzar Travesía
+    btnStart.addEventListener('click', () => {
+        btnStart.style.display = 'none';
+        loginPanel.style.display = 'block';
+    });
+
+    const input = document.getElementById('emailInput');
+    const dropdown = document.getElementById('dropdown');
+    const fichaCard = document.getElementById('fichaCard');
+    const fichaName = document.getElementById('fichaName');
+    const fichaRole = document.getElementById('fichaRole');
+    const fichaCheck = document.getElementById('fichaCheck');
+    const btnAccess = document.getElementById('btnAccess');
+    const defaultAvatarIcon = document.getElementById('defaultAvatarIcon');
+    const fichaAvatarImg = document.getElementById('fichaAvatarImg');
+
+    input.addEventListener('input', function() {
+        const value = this.value.toLowerCase().trim();
+        
+        if (value.length > 3) {
+            dropdown.style.display = 'block';
+            dropdown.textContent = value; 
+        } else {
+            dropdown.style.display = 'none';
+        }
+
+        currentUser = tripulantes.find(user => user.Email.toLowerCase() === value);
+
+        if (currentUser) {
+            currentRole = Core.getUserRole(value, tripulantes);
+            fichaName.textContent = Core.formatName(currentUser);
+            
+            // Revisa si ya tiene perfil guardado localmente usando Core
+            const profile = Core.getProfile();
+            if(profile.avatarUsuario && (profile.avatarUsuario.includes('img/') || profile.avatarUsuario.includes('.webp'))) {
+                defaultAvatarIcon.style.display = 'none';
+                fichaAvatarImg.src = profile.avatarUsuario; // Carga la imagen guardada
+                fichaAvatarImg.style.display = 'block';
+            } else {
+                defaultAvatarIcon.style.display = 'block';
+                fichaAvatarImg.style.display = 'none';
+            }
+
+            let rolDisplay = `${currentRole} - Rango: Oficial`;
+            fichaRole.textContent = rolDisplay;
+
+            fichaCard.style.borderColor = 'var(--gold-primary)';
+            fichaCheck.style.opacity = '1';
+            fichaCheck.style.transform = 'scale(1)';
+            
+            btnAccess.classList.add('active');
+            dropdown.style.display = 'none';
+        } else {
+            fichaName.textContent = '---';
+            fichaRole.textContent = 'Esperando identificación...';
+            defaultAvatarIcon.style.display = 'block';
+            fichaAvatarImg.style.display = 'none';
+            fichaCard.style.borderColor = 'var(--silver)';
+            fichaCheck.style.opacity = '0';
+            fichaCheck.style.transform = 'scale(0.5)';
+            
+            btnAccess.classList.remove('active');
+            currentRole = null;
+            currentUser = null;
+        }
+    });
+
+    btnAccess.addEventListener('click', function() {
+        if (currentUser && currentRole) {
+            Core.saveSession(currentUser, currentRole);
+            
+            const profile = Core.getProfile();
+            // Si NO tiene un avatar que sea una ruta de imagen válida (.webp o .png)
+            if (!profile.avatarUsuario || (!profile.avatarUsuario.includes('.webp') && !profile.avatarUsuario.includes('.png'))) {
+                document.getElementById('loginPanel').style.display = 'none';
+                document.getElementById('profilePanel').style.display = 'block';
+            } else {
+                redirectByRole(currentRole);
+            }
+        }
+    });
+
+    // Lógica del Modal de Selección de Imágenes de Avatar
+    let selectedAvatarImg = null;
+    const avatarOptions = document.querySelectorAll('.avatar-option');
+    avatarOptions.forEach(opt => {
+        opt.onclick = () => {
+            avatarOptions.forEach(o => o.classList.remove('selected'));
+            opt.classList.add('selected');
+            selectedAvatarImg = opt.dataset.avatar; // Guarda la ruta 'img/avatar_X.png'
+        };
+    });
+
+    document.getElementById('btnSaveProfile').addEventListener('click', () => {
+        const alias = document.getElementById('aliasInput').value.trim();
+        if (!alias) return alert('Por favor, ingresa un alias náutico.');
+        if (!selectedAvatarImg) return alert('Por favor, selecciona un retrato.');
+
+        // Guardar Perfil usando la función centralizada de Core
+        Core.saveProfile(alias, selectedAvatarImg);
+        
+        redirectByRole(currentRole);
+    });
+
+    async function redirectByRole(role) {
+        const visaKey = 'portland_visa1_accepted_' + currentUser.Email;
+        
+        // 1. Verificar si está en memoria local (rápido)
+        let hasAcceptedZarpe = localStorage.getItem(visaKey);
+        
+        // 2. Verificar en el CSV (fuente estática offline)
+        if (!hasAcceptedZarpe && currentUser['Visa de Zarpe'] === 'Si') {
+            hasAcceptedZarpe = true;
+        }
+
+        // 3. (NUEVO) Verificación dinámica al Webhook como respaldo robusto
+        if (!hasAcceptedZarpe) {
+            try {
+                // Al presionar acceder, consultamos al Webhook en vivo
+                btnAccess.innerHTML = 'Consultando Registros...';
+                const wpUrl = `https://script.google.com/macros/s/AKfycbxcp3HlO-f4tK8h5pcQMaBPqecOAH-4UY2lfRcUkEl8oSQYTPqKyoHWm5ksop3EMRKKmQ/exec?email=${encodeURIComponent(currentUser.Email)}`;
+                const response = await fetch(wpUrl);
+                const data = await response.json();
+                
+                if (data && data.visaZarpe === true) {
+                    hasAcceptedZarpe = true;
+                    localStorage.setItem(visaKey, 'true'); // Guardar para no tener que consultarlo en el futuro
+                }
+            } catch (err) {
+                console.log("El webhook no respondió o aún no tiene implementado el método doGet para lecturas.", err);
+            }
+        }
+        
+        if (!hasAcceptedZarpe) {
+            window.location.href = 'VISA DE ZARPE.html';
+            return;
+        }
+        if (role === 'Almirante') window.location.href = 'Almirante.html';
+        else if (role === 'Capitan') window.location.href = 'Capitan.html';
+        else window.location.href = 'Tripulante.html';
+    }
+
+    dropdown.addEventListener('click', function() {
+        input.value = this.textContent;
+        input.dispatchEvent(new Event('input'));
+    });
+
+</script>
+
+</body>
+</html>

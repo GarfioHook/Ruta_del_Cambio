@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pasaporte SAP Portland - Mi Travesía</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;0,900;1,400&family=Playfair+Display:ital,wght@0,600;0,800;0,900;1,600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* Paleta La Odisea */
+            --bg-parchment: #F5F4EF;
+            --navy-dark: #0F2035;
+            --navy-light: #1B365D;
+            --gold-primary: #C5A059;
+            --gold-light: #E6C875;
+            --text-dark: #112B47;
+            --text-gray: #5C6E80;
+            --silver: #8A9AAB;
+            --danger-red: #8B3A3A;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+
+        body {
+            background-color: var(--bg-parchment);
+            background-image: url('img/Background.webp'); /* FONDO GENERAL */
+            background-size: cover;
+            background-position: center;
+            font-family: 'Lato', sans-serif;
+            min-height: 100vh; width: 100vw; overflow-y: auto; overflow-x: hidden;
+            display: flex; justify-content: center; align-items: flex-start;
+        }
+
+        h1, h2, h3, .serif-text { font-family: 'Playfair Display', serif; }
+
+        .game-container {
+            position: relative; width: 100%; max-width: 1600px; min-height: 100vh;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        
+        @media (max-width: 1024px) {
+            .game-container { align-items: stretch; }
+            header { order: 1; }
+        }
+
+        /* --- CABECERA --- */
+        header {
+            position: sticky; top: 0; left: 0; width: 100%; height: auto; min-height: 70px;
+            background: rgba(245, 244, 239, 0.95); border-bottom: 2px solid var(--gold-primary);
+            display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; padding: 10px 20px; z-index: 50;
+            box-shadow: 0 4px 15px rgba(15, 32, 53, 0.1); gap: 10px;
+        }
+        @media (max-width: 768px) {
+            header { 
+                flex-direction: row; 
+                flex-wrap: wrap;
+                justify-content: space-between; 
+                align-items: center;
+                padding: 10px;
+            }
+            .header-left { order: 1; flex: 0 0 auto; margin: 0; font-size: 14px; }
+            .header-left span { font-size: 18px; margin-right: 5px; }
+            .header-right { 
+                order: 2;
+                flex: 1 1 auto;
+                display: flex; 
+                justify-content: flex-end; 
+                margin: 0;
+            }
+            .user-id-card { 
+                width: auto; 
+                max-width: none;
+                justify-content: flex-end; 
+                padding: 4px 10px 4px 4px;
+                gap: 8px;
+            }
+            .id-avatar-wrapper { width: 38px; height: 38px; font-size: 16px; }
+            .id-alias { font-size: 13px; max-width: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .id-name { font-size: 10px; }
+            .id-info { text-align: right; }
+
+            
+            /* Logo ocupa fila completa debajo del menu y el usuario */
+            .logo-center { 
+                order: 3;
+                flex: 0 0 100%;
+                text-align: center;
+                margin: 10px 0 5px 0;
+                padding: 8px;
+                border-top: 1px solid rgba(197,160,89,0.3);
+            }
+            .logo-center h1 { font-size: 22px; line-height: 1.2; }
+            .logo-center h2 { font-size: 11px; }
+        }
+        .header-left { display: flex; align-items: center; font-size: 20px; font-weight: 900; color: var(--navy-dark); font-family: 'Playfair Display', serif;}
+        .header-left span { font-size: 24px; margin-right: 15px; cursor: pointer; color: var(--gold-primary); }
+
+        .logo-center { text-align: center; position: static; }
+        .logo-center h1 { font-size: 28px; font-weight: 900; color: var(--navy-dark); margin: 0; letter-spacing: 2px; text-transform: uppercase;}
+        .logo-center h2 { font-size: 14px; font-weight: 700; color: var(--text-gray); margin-top: -2px; font-family: 'Lato', sans-serif; letter-spacing: 1px;}
+
+        /* Desktop: centro absoluto */
+        @media (min-width: 769px) {
+            .logo-center { position: absolute; left: 50%; transform: translateX(-50%); }
+        }
+
+/* --- PLACA DE IDENTIFICACIÓN SUPERIOR --- */
+        .user-id-card {
+            background: #fff; border: 2px solid var(--silver); border-radius: 40px 15px 15px 40px;
+            display: flex; align-items: center; gap: 15px; padding: 5px 15px 5px 5px;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.05), 0 4px 10px rgba(15,32,53,0.1);
+            transition: 0.3s;
+        }
+        .user-id-card:hover { border-color: var(--gold-primary); box-shadow: inset 0 2px 5px rgba(0,0,0,0.05), 0 6px 15px rgba(197, 160, 89, 0.2); }
+        
+        .id-avatar-wrapper {
+            width: 50px; height: 50px; background: var(--bg-parchment); border-radius: 50%;
+            border: 2px solid var(--navy-light); display: flex; justify-content: center; align-items: center;
+            font-size: 24px; position: relative; cursor: pointer; flex-shrink: 0; overflow: hidden;
+        }
+        .id-avatar-wrapper img { width: 100%; height: 100%; object-fit: cover; display: none; }
+        
+        /* Botón de editar superpuesto al avatar */
+        .edit-badge {
+            position: absolute; bottom: -5px; right: -5px; background: var(--gold-primary);
+            width: 22px; height: 22px; border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            font-size: 10px; border: 2px solid #fff; color: #fff; opacity: 0; transition: 0.3s;
+        }
+        .user-id-card:hover .edit-badge { opacity: 1; bottom: 0; right: 0; }
+
+        .id-info { display: flex; flex-direction: column; text-align: right; }
+        .id-alias { font-size: 16px; font-weight: 900; color: var(--navy-dark); font-family: 'Playfair Display', serif; line-height: 1.1; }
+        .id-name { font-size: 11px; font-weight: 700; color: var(--text-gray); text-transform: uppercase; letter-spacing: 0.5px; }
+        .avatar {
+            width: 40px; height: 40px; background: var(--bg-parchment); border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; font-size: 20px;
+            border: 2px solid var(--navy-light); overflow: hidden;
+        }
+        .avatar img { width: 100%; height: 100%; object-fit: cover; display: none;}
+
+        /* --- PANELES ODISEA --- */
+        .odyssey-panel {
+            background: rgba(245, 244, 239, 0.85); border: 2px solid var(--navy-light);
+            padding: 20px; position: relative; box-shadow: 5px 5px 15px rgba(15, 32, 53, 0.15);
+            backdrop-filter: blur(5px);
+        }
+        .odyssey-panel::before {
+            content: ''; position: absolute; top: 4px; left: 4px; right: 4px; bottom: 4px;
+            border: 1px solid rgba(27, 54, 93, 0.3); pointer-events: none;
+        }
+        .rivet {
+            position: absolute; width: 6px; height: 6px; background: var(--gold-primary); border-radius: 50%;
+            box-shadow: inset 1px 1px 2px rgba(255,255,255,0.5), 1px 1px 2px rgba(0,0,0,0.4);
+        }
+        .r-tl { top: 8px; left: 8px; } .r-tr { top: 8px; right: 8px; }
+        .r-bl { bottom: 8px; left: 8px; } .r-br { bottom: 8px; right: 8px; }
+        .panel-title { font-size: 18px; font-weight: 900; color: var(--navy-dark); text-align: center; margin-bottom: 15px; border-bottom: 1px solid var(--silver); padding-bottom: 5px;}
+
+        /* --- SIDEBAR IZQUIERDO --- */
+        .sidebar { 
+            position: absolute; top: 90px; left: 20px; width: 280px; z-index: 10; display: flex; flex-direction: column; gap: 15px;
+        }
+        
+        @media (max-width: 1024px) {
+            /* Orden visual correcto en móvil */
+            header         { order: 1; }
+            .map-area      { order: 2; }
+            .bitacora      { order: 3; }
+            .sidebar       { order: 4; }
+            .bottom-challenge { order: 5; }
+
+            /* Mapa: flujo normal, altura automática */
+            .map-area { 
+                position: relative !important; 
+                top: 0 !important; 
+                left: 0 !important;
+                width: 100% !important;
+                height: auto !important; 
+                min-height: 300px; 
+            }
+            .map-image { width: 100% !important; }
+
+            /* Sidebar: full width, centrado */
+            .sidebar { 
+                position: static !important; 
+                width: 92% !important; 
+                margin: 15px auto 0 !important; 
+            }
+
+            /* Bitácora: full width, flujo normal */
+            .bitacora { 
+                position: static !important; 
+                width: 92% !important; 
+                margin: 15px auto 0 !important; 
+                /* Badges en grid compacto */
+            }
+            .badges-container { flex-wrap: nowrap; justify-content: space-between; gap: 4px; padding-top: 5px; }
+            .badge-slot { flex: 1 1 0; min-width: 0; text-align: center; }
+            .badge-img-wrapper { width: 50px; height: 50px; margin: 0 auto 4px; }
+            .badge-img-wrapper img { width: 100%; height: 100%; }
+            .badge-label { font-size: 9px; line-height: 1.1; }
+            .badge-sub { font-size: 8px; }
+
+
+            /* Desafío inferior: full width, centrado */
+            .bottom-challenge { 
+                position: static !important; 
+                transform: none !important; 
+                width: 92% !important; 
+                margin: 15px auto 30px !important; 
+                text-align: center;
+            }
+        }
+
+        
+        .progress-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 13px; font-weight: 700; color: var(--navy-dark); text-transform: uppercase;}
+        .bar-bg { width: 120px; height: 10px; background: #E2E8ED; border-radius: 5px; overflow: hidden; border: 1px solid var(--silver); }
+        .bar-fill-gold { height: 100%; background: linear-gradient(90deg, var(--gold-light), var(--gold-primary)); box-shadow: 0 0 8px rgba(197, 160, 89, 0.6); transition: width 1s;}
+        
+        /* Feed de Victorias */
+        .feed-list { max-height: 180px; overflow-y: auto; }
+        .feed-item { display: flex; align-items: center; gap: 10px; padding: 8px; background: #fff; border: 1px solid var(--silver); border-radius: 8px; margin-bottom: 8px; font-size: 11px; font-weight: 700; color: var(--navy-dark); border-left: 4px solid var(--gold-primary);}
+        .feed-avatar { width: 30px; height: 30px; background: var(--bg-parchment); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 16px; border: 1px solid var(--silver); overflow:hidden;}
+        .feed-avatar img { width: 100%; height: 100%; object-fit: cover;}
+
+        /* Widget Días */
+        .widget-days { text-align: center; }
+        .widget-days .w-title { font-size: 12px; font-weight: 900; color: var(--text-gray); letter-spacing: 1px;}
+        .widget-days .w-value { font-size: 32px; font-weight: 900; color: var(--navy-dark); font-family: 'Playfair Display', serif;}
+
+        /* --- BITÁCORA DERECHA (INSIGNIAS) --- */
+        .bitacora { position: absolute; top: 90px; right: 20px; width: 500px; z-index: 10; }
+        .badges-container { display: flex; justify-content: space-between; align-items: flex-start; padding-top: 10px; }
+        .badge-slot { text-align: center; width: 85px; }
+        .badge-img-wrapper {
+            width: 70px; height: 70px; margin: 0 auto 5px; position: relative;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .badge-img-wrapper img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.2)); transition: 0.3s; }
+        .badge-img-wrapper img:hover { transform: scale(1.1); }
+        
+        .badge-label { font-size: 11px; font-weight: 800; color: var(--navy-dark); line-height: 1.1; }
+        .badge-sub { font-size: 9px; font-weight: 700; color: var(--text-gray); margin-top: 3px;}
+
+        /* --- MAPA CENTRAL --- */
+        .map-area {
+            position: absolute; top: 80px; left: 0; width: 100%; height: calc(100% - 80px);
+            z-index: 1; display: flex; justify-content: center; align-items: center; overflow: hidden;
+        }
+        .map-image {
+            width: 80%; max-width: 1200px; opacity: 0.85; mix-blend-mode: multiply;
+            /* REEMPLAZA ESTA IMAGEN CON EL MAPA LIMPIO DEL PDF (Pág 9) */
+        }
+
+        /* Pines de Ubicación (Hitos) */
+        .pin-wrapper { position: absolute; display: flex; flex-direction: column; align-items: center; z-index: 5; transform: translate(-50%, -100%); transition: 0.3s;}
+        .pin-img { width: 45px; height: 60px; object-fit: contain; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.3)); margin-bottom: 5px;}
+        .pin-label { 
+            background: rgba(255,255,255,0.8); border: 1px solid var(--gold-primary); padding: 4px 10px;
+            border-radius: 4px; font-size: 12px; font-weight: 900; color: var(--navy-dark); white-space: nowrap;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        /* ⚠️ AJUSTA ESTOS PORCENTAJES SEGÚN TU IMAGEN DE MAPA ⚠️ */
+        #pin1 { top: 45%; left: 20%; } /* La Profecía */
+        #pin2 { top: 38%; left: 38%; } /* Salida de Troya */
+        #pin3 { top: 65%; left: 52%; } /* La Cueva */
+        #pin4 { top: 42%; left: 65%; } /* Sirenas */
+        #pin5 { top: 40%; left: 82%; } /* Ítaca */
+
+        /* --- DESAFÍO INFERIOR --- */
+        .bottom-challenge {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 600px; z-index: 20; text-align: center;
+        }
+        .challenge-box {
+            background: #fff; border: 2px solid var(--gold-primary); padding: 15px 25px;
+            border-radius: 10px; box-shadow: 0 10px 20px rgba(15, 32, 53, 0.15); display: inline-block;
+        }
+        .ch-title { font-size: 12px; font-weight: 800; color: var(--text-gray); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;}
+        .ch-desc { font-size: 18px; font-weight: 900; color: var(--navy-dark); font-family: 'Playfair Display', serif;}
+        .btn-action {
+            margin-top: 15px; background: linear-gradient(180deg, var(--gold-light), var(--gold-primary));
+            border: 2px solid var(--navy-dark); padding: 10px 30px; font-size: 14px; font-weight: 900;
+            color: var(--navy-dark); text-transform: uppercase; cursor: pointer; border-radius: 5px;
+            box-shadow: 2px 2px 0 var(--navy-dark); transition: 0.2s;
+        }
+        .btn-action:active { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--navy-dark); }
+
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+
+    <!-- CABECERA -->
+    <header>
+        <div class="header-left">
+            <span>☰</span> Proyecto Ulises
+        </div>
+        <div class="logo-center">
+            <h1 class="serif-text">Ruta de Entrenamiento</h1>
+            <h2>MAPA DE TRAVESÍA SAP S/4HANA</h2>
+        </div>
+        <div class="header-right">
+            <div class="user-id-card" id="editProfileTrigger" title="Editar Perfil">
+                <div class="id-avatar-wrapper">
+                    <span id="displayAvatarIcon">⚓</span>
+                    <img id="displayAvatarImg" src="" alt="Avatar">
+                    <div class="edit-badge">✏️</div>
+                </div>
+                <div class="id-info">
+                    <span class="id-alias" id="displayAlias">¡Hola, Navegante!</span>
+                    <span class="id-name" id="displayName">Cargando...</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAPA CENTRAL (Página 9) -->
+    <main class="map-area">
+        <!-- ⚠️ IMAGEN DEL MAPA (Asegúrate de que exista img/mapa_travesia.png) ⚠️ -->
+        <img src="img/Mapa_Travesia.webp" alt="Mapa del Mediterráneo" class="map-image" onerror="this.style.display='none'">
+        
+        <!-- PINES DEL MAPA -->
+        <div class="pin-wrapper" id="pin1">
+            <img src="img/Pin.webp" class="pin-img" alt="Pin" onerror="this.src='https://cdn-icons-png.flaticon.com/512/149/149059.png'">
+            <div class="pin-label">Hito I: La Profecía</div>
+        </div>
+        <div class="pin-wrapper" id="pin2">
+            <img src="img/Pin.webp" class="pin-img" alt="Pin" onerror="this.src='https://cdn-icons-png.flaticon.com/512/149/149059.png'" style="opacity: 0.5;">
+            <div class="pin-label" style="color: var(--text-gray)">Hito II: Salida de Troya</div>
+        </div>
+        <div class="pin-wrapper" id="pin3">
+            <img src="img/Pin.webp" class="pin-img" alt="Pin" onerror="this.src='https://cdn-icons-png.flaticon.com/512/149/149059.png'" style="opacity: 0.5;">
+            <div class="pin-label" style="color: var(--text-gray)">Hito III: La Cueva y la Isla</div>
+        </div>
+        <div class="pin-wrapper" id="pin4">
+            <img src="img/Pin.webp" class="pin-img" alt="Pin" onerror="this.src='https://cdn-icons-png.flaticon.com/512/149/149059.png'" style="opacity: 0.5;">
+            <div class="pin-label" style="color: var(--text-gray)">Hito IV: Estrecho de Sirenas</div>
+        </div>
+        <div class="pin-wrapper" id="pin5">
+            <img src="img/Pin.webp" class="pin-img" alt="Pin" onerror="this.src='https://cdn-icons-png.flaticon.com/512/149/149059.png'" style="opacity: 0.5;">
+            <div class="pin-label" style="color: var(--text-gray)">Hito V: Ítaca</div>
+        </div>
+    </main>
+
+    <!-- SIDEBAR IZQUIERDO -->
+    <aside class="sidebar">
+        <!-- Panel Progreso -->
+        <div class="odyssey-panel">
+            <div class="rivet r-tl"></div><div class="rivet r-tr"></div><div class="rivet r-bl"></div><div class="rivet r-br"></div>
+            <div class="panel-title serif-text">Progreso del Viaje</div>
+            <div class="progress-row">
+                <span>Mi Avance</span>
+                <div class="bar-bg"><div class="bar-fill-gold" id="myProgressBar" style="width: 0%;"></div></div>
+            </div>
+            <div class="progress-row">
+                <span>Mi Tripulación</span>
+                <div class="bar-bg"><div class="bar-fill-gold" id="teamProgressBar" style="width: 0%;"></div></div>
+            </div>
+        </div>
+
+        <!-- Panel Feed -->
+        <div class="odyssey-panel">
+            <div class="rivet r-tl"></div><div class="rivet r-tr"></div><div class="rivet r-bl"></div><div class="rivet r-br"></div>
+            <div class="panel-title serif-text">Diario de a Bordo</div>
+            <div class="feed-list" id="feedList">
+                <p style="text-align: center; font-size: 11px; color: var(--text-gray);">Cargando bitácora...</p>
+            </div>
+        </div>
+
+        <!-- Panel Días -->
+        <div class="odyssey-panel widget-days">
+            <div class="rivet r-tl"></div><div class="rivet r-tr"></div><div class="rivet r-bl"></div><div class="rivet r-br"></div>
+            <div class="w-title">DÍAS PARA LLEGAR A ÍTACA:</div>
+            <div class="w-value" id="goLiveVal">180</div>
+        </div>
+    </aside>
+
+    <!-- BITÁCORA DERECHA (Página 10 - Medallas) -->
+    <div class="odyssey-panel bitacora">
+        <div class="rivet r-tl"></div><div class="rivet r-tr"></div><div class="rivet r-bl"></div><div class="rivet r-br"></div>
+        <div class="panel-title serif-text">Mis Insignias de la Odisea</div>
+        <div class="badges-container">
+            
+            <div class="badge-slot">
+                <div class="badge-img-wrapper">
+                    <img id="badge1" src="img/Badge_1_InActivo.png" alt="Insignia Argonauta" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2907/2907150.png'">
+                </div>
+                <div class="badge-label">Argonauta</div>
+                <div class="badge-sub">La Profecía</div>
+            </div>
+            
+            <div class="badge-slot">
+                <div class="badge-img-wrapper">
+                    <img id="badge2" src="img/Badge_2_InActivo.png" alt="Insignia Navegante" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2907/2907150.png'">
+                </div>
+                <div class="badge-label">Navegante</div>
+                <div class="badge-sub">Salida de Troya</div>
+            </div>
+            
+            <div class="badge-slot">
+                <div class="badge-img-wrapper">
+                    <img id="badge3" src="img/Badge_3_InActivo.png" alt="Insignia Estratega" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2907/2907150.png'">
+                </div>
+                <div class="badge-label">Estratega</div>
+                <div class="badge-sub">La Cueva y la Isla</div>
+            </div>
+            
+            <div class="badge-slot">
+                <div class="badge-img-wrapper">
+                    <img id="badge4" src="img/Badge_4_InActivo.png" alt="Insignia Timonel" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2907/2907150.png'">
+                </div>
+                <div class="badge-label">Timonel</div>
+                <div class="badge-sub">Estrecho de Sirenas</div>
+            </div>
+            
+            <div class="badge-slot">
+                <div class="badge-img-wrapper">
+                    <img id="badge5" src="img/Badge_5_InActivo.png" alt="Insignia Ulises" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2907/2907150.png'">
+                </div>
+                <div class="badge-label">Insignia Ulises</div>
+                <div class="badge-sub">Destino: Ítaca</div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- DESAFÍO INFERIOR -->
+    <div class="bottom-challenge">
+        <div class="challenge-box">
+            <div class="ch-title">Próximo Rumbo</div>
+            <div class="ch-desc" id="nextChallengeText">Capacitación Introductoria en UBITS</div>
+            <button class="btn-action">Ir al Módulo de Entrenamiento</button>
+        </div>
+    </div>
+
+</div>
+
+<!-- SCRIPTS DE LÓGICA -->
+<script src="scripts/core.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const user = Core.checkSession();
+        if (!user) return;
+
+        const allData = await Core.loadAppData();
+// --- ACTUALIZAR PLACA DE IDENTIFICACIÓN ---
+        const profile = Core.getProfile();
+        const displayAlias = document.getElementById('displayAlias');
+        const displayName = document.getElementById('displayName');
+        const displayAvatarImg = document.getElementById('displayAvatarImg');
+        const displayAvatarIcon = document.getElementById('displayAvatarIcon');
+        
+        // 1. Nombre Real (Del CSV)
+        if (displayName) displayName.innerText = Core.formatName(user);
+
+        // 2. Alias o Saludo por defecto
+        if (displayAlias) {
+            // Dependiendo de la página en la que estés, puedes forzar el título (Almirante/Capitán)
+            // Si la URL contiene 'Almirante', usamos ese prefijo. Si no, usamos el alias puro.
+            const isAdmiral = window.location.pathname.includes('Almirante');
+            const isCaptain = window.location.pathname.includes('Capitan');
+            
+            let prefix = isAdmiral ? 'Almirante ' : (isCaptain ? 'Capitán ' : '');
+            
+            if (profile.aliasUsuario) {
+                displayAlias.innerText = `¡Hola, ${profile.aliasUsuario}!`;
+            } else {
+                displayAlias.innerText = `¡Hola, ${prefix}${Core.formatGreeting(user)}!`;
+            }
+        }
+
+        // 3. Avatar (Imagen PNG o Emoji)
+        if (profile.avatarUsuario && (profile.avatarUsuario.includes('.webp') || profile.avatarUsuario.includes('.png'))) {
+            if (displayAvatarIcon) displayAvatarIcon.style.display = 'none';
+            if (displayAvatarImg) {
+                displayAvatarImg.src = profile.avatarUsuario;
+                displayAvatarImg.style.display = 'block';
+            }
+        } else if (profile.avatarUsuario) {
+            if (displayAvatarIcon) displayAvatarIcon.innerText = profile.avatarUsuario;
+        }
+        // ------------------------------------------
+
+        // 2. Actualizar Bitácora (Imágenes de Insignias)
+        const visasData = [
+            { key: 'Visa de Zarpe', imgActiva: 'img/Badge_1_Activo.png', imgBloqueada: 'img/Badge_1_InActivo.png', id: 'badge1', mapPin: 'pin1' },
+            { key: 'Visa de Navegacion', imgActiva: 'img/Badge_2_Activo.png', imgBloqueada: 'img/Badge_2_InActivo.png', id: 'badge2', mapPin: 'pin2' },
+            { key: 'Visa de Aduanas', imgActiva: 'img/Badge_3_Activo.png', imgBloqueada: 'img/Badge_3_InActivo.png', id: 'badge3', mapPin: 'pin3' },
+            { key: 'Visa de Descarga', imgActiva: 'img/Badge_4_Activo.png', imgBloqueada: 'img/Badge_4_InActivo.png', id: 'badge4', mapPin: 'pin4' },
+            { key: 'Visa de Transito', imgActiva: 'img/Badge_5_Activo.png', imgBloqueada: 'img/Badge_5_InActivo.png', id: 'badge5', mapPin: 'pin5' }
+        ];
+
+        let completedCount = 0;
+
+        visasData.forEach((visa) => {
+            const badgeImg = document.getElementById(visa.id);
+            const mapPin = document.getElementById(visa.mapPin);
+            
+            if (user[visa.key] === 'Si') {
+                if(badgeImg) badgeImg.src = visa.imgActiva;
+                if(mapPin) {
+                    mapPin.style.opacity = '1';
+                    mapPin.style.transform = 'translate(-50%, -100%) scale(1.1)';
+                    mapPin.style.zIndex = '10';
+                    const pinImg = mapPin.querySelector('.pin-img');
+                    if (pinImg) {
+                        pinImg.style.opacity = '1';
+                        pinImg.style.filter = 'drop-shadow(0 0 15px rgba(197,160,89,0.8)) drop-shadow(0 5px 5px rgba(0,0,0,0.3))';
+                    }
+                    const pinLabel = mapPin.querySelector('.pin-label');
+                    if (pinLabel) {
+                        pinLabel.style.color = 'var(--navy-dark)';
+                        pinLabel.style.borderColor = 'var(--gold-primary)';
+                        pinLabel.style.background = 'rgba(255,255,255,0.95)';
+                    }
+                }
+                completedCount++;
+            } else {
+                if(badgeImg) badgeImg.src = visa.imgBloqueada;
+                if(mapPin) {
+                    mapPin.style.opacity = '0.8';
+                    mapPin.style.transform = 'translate(-50%, -100%) scale(0.9)';
+                    mapPin.style.zIndex = '5';
+                    const pinImg = mapPin.querySelector('.pin-img');
+                    if (pinImg) {
+                        pinImg.style.opacity = '0.4';
+                        pinImg.style.filter = 'grayscale(100%) drop-shadow(0 5px 5px rgba(0,0,0,0.2))';
+                    }
+                    const pinLabel = mapPin.querySelector('.pin-label');
+                    if (pinLabel) {
+                        pinLabel.style.color = 'var(--text-gray)';
+                        pinLabel.style.borderColor = 'var(--silver)';
+                        pinLabel.style.background = 'rgba(245, 244, 239, 0.8)';
+                    }
+                }
+            }
+        });
+
+        // Lógica para mostrar el "Próximo Desafío" basado en lo que falta
+        const challenges = [
+            "Juramento de Compromiso Activo",
+            "Capacitación introductoria en UBITS",
+            "Aprobación de evaluación teórica",
+            "Dominio de capacitación específica por rol",
+            "Certificación oficial tras evaluación práctica",
+            "¡Has llegado a Ítaca! Preparados para el Go-Live."
+        ];
+        document.getElementById('nextChallengeText').innerText = challenges[completedCount] || challenges[5];
+
+
+        // 3. Progreso de la Misión (Barras Doradas)
+        const visaKeys = visasData.map(v => v.key);
+        
+        const myProgress = Core.calculateProgressPercent([user], visaKeys);
+        document.getElementById('myProgressBar').style.width = myProgress + '%';
+
+        const shipmates = allData.filter(u => u['Capitan a Cargo'] === user['Capitan a Cargo']);
+        const teamProgress = Core.calculateProgressPercent(shipmates, visaKeys);
+        document.getElementById('teamProgressBar').style.width = teamProgress + '%';
+
+        // 4. Diario de a Bordo (Feed de victorias local)
+        const feedList = document.getElementById('feedList');
+        if (feedList) {
+            const achievements = Core.getLatestAchievements(allData, user['Capitan a Cargo']);
+            feedList.innerHTML = achievements.length 
+                ? achievements.map(ach => {
+                    // Si el avatar es un string con ruta (png), usar <img>, sino usar emoji
+                    const avatarHtml = ach.avatar && ach.avatar.includes('.png') 
+                                        ? `<img src="${ach.avatar}">` 
+                                        : `<span>${ach.avatar || '⚓'}</span>`;
+                    return `
+                    <div class="feed-item">
+                        <div class="feed-avatar">${avatarHtml}</div>
+                        <div>${ach.name} obtuvo ${ach.visa}!</div>
+                    </div>`;
+                }).join('')
+                : '<p style="text-align: center; font-size: 11px; color: var(--text-gray);">El mar está en calma. Sin novedades.</p>';
+        }
+
+        // 5. Días Go-Live
+        document.getElementById('goLiveVal').textContent = Core.getDaysToGoLive();
+
+        // 6. Logout
+        document.querySelector('.header-left').onclick = () => { if(confirm('¿Abandonar el barco (Cerrar sesión)?')) Core.logout(); };
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,10 @@
+﻿ID Tripulante;Rango;Nombre Tripultante;Alias;Email;Bandera;Capitan a Cargo;Visa de Zarpe;Fecha Visa de Zarpe;Visa de Navegacion;Fecha Visa de Navegacion;Visa de Aduanas;Fecha Visa de Aduanas;Visa de Descarga;Fecha Visa de Descarga;Visa de Transito;Fecha Visa de Transito
+1;Almirante;Daniel Yung;;dyung@pjportland.cl;Chile;;;;;;;;;;;
+2;Capitan;Germán Faundes;;gfaundes@pjportland.cl;Chile;dyung@pjportland.cl;;;;;;;;;;
+3;Tripulante;Oscar Sella;;osella@pjportland.cl;Chile;gfaundes@pjportland.cl;Si;01-04-2026;Si;03-04-2026;Si;05-04-2026;No;;No;
+4;Tripulante;Hector Correa;;hcorrea@pjportland.cl;Chile;gfaundes@pjportland.cl;Si;03-04-2026;No;;No;;No;;No;
+5;Tripulante;Leandro Jara;;Ljara@pjportland.cl;Chile;gfaundes@pjportland.cl;No;;No;;No;;No;;No;
+6;Tripulante;Nicolas Riquelme;;nriquelme@pjportland.cl;Perú;sbravo@pjportland.cl;Si;01-04-2026;Si;05-04-2026;No;;No;;No;
+7;Capitan;Soledad Bravo;;sbravo@pjportland.cl;Perú;dyung@pjportland.cl;;;;;;;;;;
+8;Capitan;Juliana Gomes;;jgomes@pjportland.cl;Colombia;dyung@pjportland.cl;;;;;;;;;;
+9;Tripulante;Margareth Perez;;mperez@pjportland.cl;Colombia;jgomes@pjportland.cl;;;;;;;;;;

@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Control de Capitán - Proyecto Ulises</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;0,900;1,400&family=Playfair+Display:ital,wght@0,600;0,800;0,900;1,600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* Paleta La Odisea */
+            --bg-parchment: #F5F4EF;
+            --navy-dark: #0F2035;
+            --navy-light: #1B365D;
+            --gold-primary: #C5A059;
+            --gold-light: #E6C875;
+            --text-dark: #112B47;
+            --text-gray: #5C6E80;
+            --silver: #8A9AAB;
+            
+            /* Colores de Columnas Visas */
+            --col-visa-header: rgba(15, 32, 53, 0.05);
+            --cell-crew-bg: rgba(255, 255, 255, 0.6);
+            --cell-visa-bg: rgba(245, 244, 239, 0.5);
+            --cell-stat-bg: rgba(255, 255, 255, 0.8);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+
+        body {
+            background-color: var(--bg-parchment);
+            background-image: url('img/Background.webp'); /* FONDO GENERAL */
+            background-size: cover; background-position: center; background-attachment: fixed;
+            font-family: 'Lato', sans-serif;
+            min-height: 100vh; width: 100vw; overflow-y: auto; overflow-x: hidden;
+            display: flex; justify-content: center; align-items: flex-start;
+        }
+
+        h1, h2, h3, .serif-text { font-family: 'Playfair Display', serif; }
+
+        .game-container {
+            position: relative; width: 100%; max-width: 1600px; min-height: 100vh;
+            display: flex; flex-direction: column; align-items: stretch;
+        }
+
+        /* Marco Decorativo - CORREGIDO Z-INDEX a 1 */
+        .frame-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-image: url('img/Fondo.webp'); /* MARCO NAVAL */
+            background-size: 100% 100%; pointer-events: none; z-index: 1;
+        }
+
+        /* --- CABECERA SUPERIOR --- */
+        header {
+            position: sticky; top: 0; left: 0; width: 100%; height: auto; min-height: 70px;
+            background: rgba(245, 244, 239, 0.95); border-bottom: 2px solid var(--gold-primary);
+            display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; padding: 10px 20px; z-index: 40;
+            box-shadow: 0 4px 15px rgba(15, 32, 53, 0.1); gap: 10px;
+        }
+
+        @media (max-width: 768px) {
+            header { 
+                flex-direction: row; 
+                flex-wrap: wrap;
+                justify-content: space-between; 
+                align-items: center;
+                padding: 10px;
+            }
+            .header-left { order: 1; flex: 0 0 auto; margin: 0; font-size: 14px; }
+            .header-left span { font-size: 18px; margin-right: 5px; }
+            .header-right { 
+                order: 2;
+                flex: 1 1 auto;
+                display: flex; 
+                justify-content: flex-end; 
+                margin: 0;
+            }
+            .user-id-card { 
+                width: auto; 
+                max-width: none;
+                justify-content: flex-end; 
+                padding: 4px 10px 4px 4px;
+                gap: 8px;
+            }
+            .id-avatar-wrapper { width: 38px; height: 38px; font-size: 16px; }
+            .id-alias { font-size: 13px; max-width: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .id-name { font-size: 10px; }
+            .id-info { text-align: right; }
+            /* Título ocupa fila completa debajo */
+            .header-center { 
+                order: 3;
+                flex: 0 0 100%;
+                text-align: center;
+                margin: 10px 0 5px 0;
+                padding: 8px;
+                border-top: 1px solid rgba(197,160,89,0.3);
+            }
+            .main-title { font-size: 22px; line-height: 1.2; }
+            .sub-title { font-size: 11px; }
+        }
+        .header-left { display: flex; align-items: center; font-size: 20px; font-weight: 900; color: var(--navy-dark); font-family: 'Playfair Display', serif;}
+        .header-left span { font-size: 24px; margin-right: 15px; cursor: pointer; color: var(--gold-primary); }
+
+        /* Base: sin posición absoluta para que el media query funcione */
+        .header-center { position: static; text-align: center; }
+        .main-title { font-size: 26px; font-weight: 900; color: var(--navy-dark); margin: 0; line-height: 1; letter-spacing: 1px; text-transform: uppercase;}
+        .sub-title { font-size: 14px; font-weight: 700; color: var(--text-gray); margin-top: 2px; letter-spacing: 0.5px;}
+
+        /* Desktop: centro absoluto */
+        @media (min-width: 769px) {
+            .header-center { position: absolute; left: 50%; transform: translateX(-50%); }
+        }
+
+        .header-right { display: flex; align-items: center; gap: 10px; }
+
+        /* --- PLACA DE IDENTIFICACIÓN SUPERIOR --- */
+        .user-id-card {
+            background: #fff; border: 2px solid var(--silver); border-radius: 40px 15px 15px 40px;
+            display: flex; align-items: center; gap: 15px; padding: 5px 15px 5px 5px;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.05), 0 4px 10px rgba(15,32,53,0.1);
+            transition: 0.3s; cursor: pointer;
+        }
+        .user-id-card:hover { border-color: var(--gold-primary); box-shadow: inset 0 2px 5px rgba(0,0,0,0.05), 0 6px 15px rgba(197, 160, 89, 0.2); }
+        
+        .id-avatar-wrapper {
+            width: 50px; height: 50px; background: var(--bg-parchment); border-radius: 50%;
+            border: 2px solid var(--navy-light); display: flex; justify-content: center; align-items: center;
+            font-size: 24px; position: relative; flex-shrink: 0; overflow: hidden;
+        }
+        .id-avatar-wrapper img { width: 100%; height: 100%; object-fit: cover; display: none; }
+        
+        .edit-badge {
+            position: absolute; bottom: -5px; right: -5px; background: var(--gold-primary);
+            width: 22px; height: 22px; border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            font-size: 10px; border: 2px solid #fff; color: #fff; opacity: 0; transition: 0.3s;
+        }
+        .user-id-card:hover .edit-badge { opacity: 1; bottom: 0; right: 0; }
+
+        .id-info { display: flex; flex-direction: column; text-align: right; }
+        .id-alias { font-size: 16px; font-weight: 900; color: var(--navy-dark); font-family: 'Playfair Display', serif; line-height: 1.1; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+        .id-name { font-size: 11px; font-weight: 700; color: var(--text-gray); text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* --- CONTENEDOR PRINCIPAL FLEXBOX --- */
+        .content-wrapper {
+            position: relative; width: 100%; padding: 20px;
+            display: flex; gap: 20px; z-index: 10; margin-top: 20px;
+        }
+
+        @media (max-width: 1024px) {
+            .content-wrapper { flex-direction: column; padding: 15px; gap: 15px; }
+            .sidebar { width: 100% !important; min-width: 0; }
+            .frame-overlay { display: none; }
+            .odyssey-panel { width: 100% !important; box-sizing: border-box; }
+        }
+
+        @media (max-width: 600px) {
+            .content-wrapper { padding: 8px; gap: 10px; }
+        }
+
+        @media (min-width: 1025px) {
+            .sidebar { width: 280px; flex-shrink: 0; }
+        }
+
+        /* --- PANELES ODISEA (Base para Sidebar y Tabla) --- */
+        .odyssey-panel {
+            background: rgba(245, 244, 239, 0.85); border: 2px solid var(--navy-light);
+            padding: 20px; position: relative; box-shadow: 5px 5px 15px rgba(15, 32, 53, 0.15);
+            backdrop-filter: blur(5px);
+        }
+        .odyssey-panel::before {
+            content: ''; position: absolute; top: 4px; left: 4px; right: 4px; bottom: 4px;
+            border: 1px solid rgba(27, 54, 93, 0.2); pointer-events: none;
+        }
+        .rivet {
+            position: absolute; width: 8px; height: 8px; background: var(--gold-primary); border-radius: 50%;
+            box-shadow: inset 1px 1px 2px rgba(255,255,255,0.5), 1px 1px 2px rgba(0,0,0,0.4);
+        }
+        .r-tl { top: 10px; left: 10px; } .r-tr { top: 10px; right: 10px; }
+        .r-bl { bottom: 10px; left: 10px; } .r-br { bottom: 10px; right: 10px; }
+
+        /* --- SIDEBAR IZQUIERDO --- */
+        .sidebar { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+        
+        /* Bloque Tripulación */
+        .trip-box { text-align: center; border-bottom: 1px solid var(--silver); padding-bottom: 15px; margin-bottom: 15px; }
+        .trip-title-tag { font-size: 11px; font-weight: 900; color: var(--text-gray); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+        .trip-number { font-size: 38px; font-weight: 900; color: var(--navy-dark); line-height: 1; font-family: 'Playfair Display', serif;}
+        
+        /* Bloque Resumen */
+        .sb-title { text-align: center; font-size: 13px; font-weight: 900; color: var(--navy-dark); margin-bottom: 10px; text-transform: uppercase;}
+        .progress-section { display: flex; align-items: center; gap: 10px; margin-bottom: 15px;}
+        .big-prog-bg { flex: 1; height: 12px; background: #E2E8ED; border-radius: 6px; overflow: hidden; border: 1px solid var(--silver);}
+        .big-prog-fill { height: 100%; background: linear-gradient(90deg, var(--gold-light), var(--gold-primary)); box-shadow: 0 0 8px rgba(197, 160, 89, 0.6); transition: width 1s;}
+        .big-prog-text { font-size: 22px; font-weight: 900; color: var(--navy-dark); font-family: 'Playfair Display', serif;}
+        
+        .stat-box {
+            background: var(--cell-stat-bg); border: 1px solid var(--silver); border-radius: 8px; padding: 12px 10px;
+            text-align: center; display: flex; flex-direction: column; justify-content: center; margin-bottom: 10px;
+        }
+        .stat-title { font-size: 10px; font-weight: 900; color: var(--text-gray); letter-spacing: 0.5px;}
+        .stat-val { font-size: 22px; font-weight: 900; color: var(--navy-dark); margin-top: 2px; line-height: 1; font-family: 'Playfair Display', serif;}
+
+        /* Feed Diario de a Bordo */
+        .feed-list { max-height: 250px; overflow-y: auto; padding-right: 5px;}
+        .feed-item {
+            background: #fff; border: 1px solid var(--silver); border-radius: 8px; padding: 10px; 
+            display: flex; align-items: center; gap: 10px; margin-bottom: 8px; border-left: 4px solid var(--gold-primary);
+        }
+        .feed-avatar {
+            width: 35px; height: 35px; background: var(--bg-parchment); border-radius: 50%; 
+            display: flex; justify-content: center; align-items: center; font-size: 18px; border: 1px solid var(--silver); overflow: hidden; flex-shrink: 0;
+        }
+        .feed-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .feed-text { font-size: 11px; font-weight: 700; color: var(--navy-dark); line-height: 1.3;}
+
+        /* --- PANEL PRINCIPAL DERECHO (Tabla) --- */
+        .main-panel { flex: 1; display: flex; flex-direction: column; }
+        
+        .table-scroll-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            margin-top: 10px;
+            padding-bottom: 10px;
+        }
+
+        .panel-title { font-size: 18px; font-weight: 900; color: var(--navy-dark); margin-bottom: 20px; border-bottom: 1px solid var(--silver); padding-bottom: 5px;}
+
+        /* GRID TABLE */
+        .grid-table {
+            display: grid;
+            grid-template-columns: 260px repeat(5, minmax(140px, 1fr));
+            gap: 10px;
+            flex: 1;
+        }
+
+        /* Celdas Genéricas */
+        .cell { padding: 12px; border-radius: 8px; display: flex; flex-direction: column; justify-content: center; position: relative; border: 1px solid var(--silver);}
+        
+        /* Cabeceras de Columna */
+        .header-cell {
+            text-align: center; font-weight: 900; font-size: 12px; color: var(--navy-dark);
+            display: flex; justify-content: center; align-items: center; line-height: 1.2;
+            background: var(--col-visa-header); text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .header-gray { background: var(--cell-crew-bg); justify-content: flex-start; padding-left: 20px;}
+
+        /* Celdas de Tripulante (Izquierda) */
+        .crew-cell {
+            background: var(--cell-crew-bg); flex-direction: row; justify-content: flex-start; align-items: center; gap: 15px; padding-left: 15px;
+        }
+        .crew-avatar {
+            width: 45px; height: 45px; background: #fff; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; font-size: 20px;
+            border: 2px solid var(--navy-light); box-shadow: inset 0 2px 5px rgba(0,0,0,0.1); overflow: hidden; flex-shrink: 0;
+        }
+        .crew-avatar img { width: 100%; height: 100%; object-fit: cover;}
+        
+        .crew-info { display: flex; flex-direction: column; overflow: hidden;}
+        .crew-name { font-weight: 900; font-size: 14px; color: var(--navy-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+        .crew-role { font-weight: 700; font-size: 11px; color: var(--text-gray); margin-top: 2px;}
+
+        /* Celdas de Visa (Centro) */
+        .visa-cell {
+            background: var(--cell-visa-bg); align-items: center; justify-content: flex-start; padding-top: 15px;
+        }
+        
+        /* Imagen de Insignia */
+        .badge-img {
+            width: 65px; height: 65px; object-fit: contain; margin-bottom: 12px;
+            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.15)); transition: 0.3s;
+        }
+        .badge-img:hover { transform: scale(1.1); }
+        .badge-locked { opacity: 0.6; filter: grayscale(100%) drop-shadow(0 2px 2px rgba(0,0,0,0.1)); }
+
+        /* Barras de progreso pequeñas */
+        .prog-container { display: flex; align-items: center; gap: 5px; width: 100%; justify-content: center;}
+        .prog-bar { width: 60px; height: 6px; background: #E2E8ED; border-radius: 3px; overflow: hidden; border: 1px solid var(--silver); }
+        .prog-fill-gold { height: 100%; background: linear-gradient(90deg, var(--gold-light), var(--gold-primary)); }
+        .prog-text { font-size: 10px; font-weight: 900; color: var(--text-gray);}
+        .t-gold { color: var(--gold-primary); }
+
+        /* --- MODAL DE PERSONALIZACIÓN --- */
+        .profile-modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 32, 53, 0.7); backdrop-filter: blur(8px);
+            display: none; justify-content: center; align-items: center; z-index: 1000;
+        }
+        .profile-modal {
+            background: var(--bg-parchment); border-radius: 15px; width: 90%; max-width: 700px; padding: 40px; 
+            border: 3px solid var(--navy-light); box-shadow: 0 20px 50px rgba(0,0,0,0.5); text-align: center; position: relative;
+        }
+        @media (max-width: 480px) {
+            .profile-modal { padding: 30px 20px; }
+            .avatar-gallery { grid-template-columns: repeat(3, 1fr); }
+            .avatar-option { width: 70px; height: 70px; }
+        }
+        .profile-modal::before {
+            content: ''; position: absolute; top: 6px; left: 6px; right: 6px; bottom: 6px;
+            border: 1px solid var(--navy-light); pointer-events: none;
+        }
+        
+        .profile-modal h2 { font-size: 24px; font-weight: 900; color: var(--navy-dark); margin-bottom: 5px; text-transform: uppercase;}
+        .profile-modal p { color: var(--text-gray); font-size: 14px; margin-bottom: 25px; font-style: italic;}
+
+        .avatar-gallery {
+            display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px;
+            max-height: 300px; overflow-y: auto; padding: 15px; margin-bottom: 25px;
+            background: rgba(255,255,255,0.5); border: 1px solid var(--silver); border-radius: 8px;
+        }
+        .avatar-option {
+            width: 80px; height: 80px; cursor: pointer; transition: 0.3s;
+            border: 3px solid transparent; border-radius: 50%; overflow: hidden;
+            display: flex; justify-content: center; align-items: center; background: #E8E2D2;
+        }
+        .avatar-option img { width: 100%; height: 100%; object-fit: cover; }
+        .avatar-option:hover { transform: scale(1.1); border-color: var(--silver); }
+        .avatar-option.selected { border-color: var(--gold-primary); box-shadow: 0 0 15px rgba(197, 160, 89, 0.6); }
+
+        .alias-input {
+            width: 100%; padding: 15px; border: 2px solid var(--silver); border-radius: 8px;
+            font-size: 16px; font-weight: 700; color: var(--navy-dark); outline: none; transition: 0.3s; margin-bottom: 20px;
+            font-family: 'Lato', sans-serif;
+        }
+        .alias-input:focus { border-color: var(--gold-primary); }
+
+        .btn-save-profile {
+            width: 100%; background: linear-gradient(180deg, var(--gold-light), var(--gold-primary)); 
+            border: 2px solid var(--navy-dark); padding: 15px; border-radius: 8px; font-size: 16px; font-weight: 900; 
+            color: var(--navy-dark); cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: 0.2s;
+        }
+        .btn-save-profile:active { transform: translateY(2px); }
+
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+
+    <!-- Marco Decorativo -->
+    <div class="frame-overlay"></div>
+
+    <!-- CABECERA -->
+    <header>
+        <div class="header-left">
+            <span>☰</span> Proyecto Ulises
+        </div>
+        
+        <div class="header-center">
+            <h1 class="main-title">MI TRIPULACIÓN</h1>
+            <h2 class="sub-title">PANEL DE CONTROL DE CAPITÁN</h2>
+        </div>
+
+        <div class="header-right">
+            <!-- Placa de Identificación -->
+            <div class="user-id-card" id="editProfileTrigger" title="Editar Perfil">
+                <div class="id-avatar-wrapper">
+                    <span id="displayAvatarIcon">⚓</span>
+                    <img id="displayAvatarImg" src="" alt="Avatar">
+                    <div class="edit-badge">✏️</div>
+                </div>
+                <div class="id-info">
+                    <span class="id-alias" id="displayAlias">¡Hola, Navegante!</span>
+                    <span class="id-name" id="displayName">Cargando...</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTENEDOR PRINCIPAL -->
+    <div class="content-wrapper">
+        
+        <!-- SIDEBAR IZQUIERDO -->
+        <aside class="sidebar">
+            
+            <!-- Tarjeta 1: Resumen y Stats -->
+            <div class="odyssey-panel">
+                <div class="rivet r-tl"></div><div class="rivet r-tr"></div><div class="rivet r-bl"></div><div class="rivet r-br"></div>
+                
+                <div class="trip-box">
+                    <div class="trip-title-tag">TRIPULACIÓN A CARGO</div>
+                    <div class="trip-number" id="crewCountDisplay">0</div>
+                    <div class="trip-label">Usuarios Oficiales</div>
+                </div>
+
+                <div class="sb-title">AVANCE GLOBAL DE LA FLOTA</div>
+                
+                <div class="progress-section">
+                    <div class="big-prog-bg"><div class="big-prog-fill" id="teamProgressFill" style="width: 0%;"></div></div>
+                    <div class="big-prog-text" id="teamProgressText">0%</div>
+                </div>
+
+                <div class="stat-box">
+                    <div class="stat-title">NIVEL DE COOPERACIÓN</div>
+                    <div class="stat-val" style="color: #4CAF50;">ALTO</div>
+                </div>
+
+                <div class="stat-box">
+                    <div class="stat-title">DÍAS PARA LLEGAR A ÍTACA</div>
+                    <div class="stat-val" id="daysToGoLive">180</div>
+                </div>
+            </div>
+
+            <!-- Tarjeta 2: Diario de a Bordo -->
+            <div class="odyssey-panel">
+                <div class="rivet r-tl"></div><div class="rivet r-tr"></div><div class="rivet r-bl"></div><div class="rivet r-br"></div>
+                <h3 class="sb-title" style="margin-bottom: 2px;">Diario de a Bordo</h3>
+                <p style="font-size: 11px; color: var(--text-gray); text-align: center; margin-bottom: 15px; font-style: italic;">Últimos logros de la tripulación</p>
+                
+                <div class="feed-list" id="feedList">
+                    <p style="text-align: center; font-size: 11px; color: var(--text-gray);">Cargando bitácora...</p>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- PANEL PRINCIPAL (Tabla Grid) -->
+        <main class="odyssey-panel main-panel">
+            <div class="rivet r-tl"></div><div class="rivet r-tr"></div><div class="rivet r-bl"></div><div class="rivet r-br"></div>
+            <div class="panel-title serif-text">Manifiesto de Progreso</div>
+            
+            <div class="table-scroll-wrapper">
+                <div class="grid-table" id="crewTableGrid">
+                    <p style="text-align: center; color: var(--text-gray); grid-column: span 6;">Cargando registros de la tripulación...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal de Personalización (Dashboard) -->
+    <div class="profile-modal-overlay" id="profilePopup">
+        <div class="profile-modal">
+            <div class="rivet r-tl"></div><div class="rivet r-tr"></div><div class="rivet r-bl"></div><div class="rivet r-br"></div>
+            <h2>Identidad de Capitán</h2>
+            <p>Actualiza tu alias y retrato para el registro oficial.</p>
+            
+            <input type="text" id="aliasInput" class="alias-input" placeholder="Tu alias náutico..." maxlength="20">
+            
+            <div class="avatar-gallery" id="avatarGallery">
+                <div class="avatar-option" data-avatar="img/Avatar01.webp"><img src="img/Avatar01.webp" alt="Avatar 1"></div>
+                <div class="avatar-option" data-avatar="img/Avatar02.webp"><img src="img/Avatar02.webp" alt="Avatar 2"></div>
+                <div class="avatar-option" data-avatar="img/Avatar03.webp"><img src="img/Avatar03.webp" alt="Avatar 3"></div>
+                <div class="avatar-option" data-avatar="img/Avatar04.webp"><img src="img/Avatar04.webp" alt="Avatar 4"></div>
+                <div class="avatar-option" data-avatar="img/Avatar05.webp"><img src="img/Avatar05.webp" alt="Avatar 5"></div>
+                <div class="avatar-option" data-avatar="img/Avatar06.webp"><img src="img/Avatar06.webp" alt="Avatar 6"></div>
+                <div class="avatar-option" data-avatar="img/Avatar07.webp"><img src="img/Avatar07.webp" alt="Avatar 7"></div>
+                <div class="avatar-option" data-avatar="img/Avatar08.webp"><img src="img/Avatar08.webp" alt="Avatar 8"></div>            
+                <div class="avatar-option" data-avatar="img/Avatar09.webp"><img src="img/Avatar09.webp" alt="Avatar 9"></div>
+                <div class="avatar-option" data-avatar="img/Avatar10.webp"><img src="img/Avatar10.webp" alt="Avatar 10"></div>  
+            </div>
+            
+            <button class="btn-save-profile" id="btnSaveProfile">Actualizar Registro</button>
+            <p style="margin-top: 15px; cursor: pointer; color: var(--text-gray); font-weight: bold; font-size: 12px; text-transform: uppercase;" onclick="document.getElementById('profilePopup').style.display='none'">Cerrar</p>
+        </div>
+    </div>
+
+</div>
+
+<!-- SCRIPTS DE LÓGICA -->
+<script src="scripts/core.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const user = Core.checkSession();
+        if (!user) return;
+
+        const allData = await Core.loadAppData();
+        const captainEmail = user.Email;
+        
+        // 1. Filtrar tripulación por email del capitán
+        const myCrew = allData.filter(u => u['Capitan a Cargo'] === captainEmail);
+        
+        // --- ACTUALIZAR PLACA DE IDENTIFICACIÓN ---
+        const profile = Core.getProfile();
+        const displayAlias = document.getElementById('displayAlias');
+        const displayName = document.getElementById('displayName');
+        const displayAvatarImg = document.getElementById('displayAvatarImg');
+        const displayAvatarIcon = document.getElementById('displayAvatarIcon');
+        
+        // 1. Nombre Real (Del CSV)
+        if (displayName) displayName.innerText = Core.formatName(user);
+
+        // 2. Alias o Saludo por defecto
+        if (displayAlias) {
+            const isAdmiral = window.location.pathname.includes('Almirante');
+            const isCaptain = window.location.pathname.includes('Capitan');
+            let prefix = isAdmiral ? 'Almirante ' : (isCaptain ? 'Capitán ' : '');
+            
+            if (profile.aliasUsuario) {
+                displayAlias.innerText = `¡Hola, ${profile.aliasUsuario}!`;
+            } else {
+                displayAlias.innerText = `¡Hola, ${prefix}${Core.formatGreeting(user)}!`;
+            }
+        }
+
+        // 3. Avatar (Imagen PNG/WebP o Emoji)
+        if (profile.avatarUsuario && (profile.avatarUsuario.includes('.webp') || profile.avatarUsuario.includes('.png') || profile.avatarUsuario.includes('.jpg'))) {
+            if (displayAvatarIcon) displayAvatarIcon.style.display = 'none';
+            if (displayAvatarImg) {
+                displayAvatarImg.src = profile.avatarUsuario;
+                displayAvatarImg.style.display = 'block';
+            }
+        } else if (profile.avatarUsuario) {
+            if (displayAvatarIcon) displayAvatarIcon.innerText = profile.avatarUsuario;
+        }
+        // ------------------------------------------
+
+        // Lógica de Edición de Perfil
+        const profilePopup = document.getElementById('profilePopup');
+        const aliasInput = document.getElementById('aliasInput');
+        const avatarOptions = document.querySelectorAll('.avatar-option');
+        let tempAvatar = profile.avatarUsuario || null;
+
+        document.getElementById('editProfileTrigger').onclick = () => {
+            aliasInput.value = profile.aliasUsuario || '';
+            avatarOptions.forEach(opt => {
+                opt.classList.toggle('selected', opt.dataset.avatar === tempAvatar);
+            });
+            profilePopup.style.display = 'flex';
+        };
+
+        avatarOptions.forEach(opt => {
+            opt.onclick = () => {
+                avatarOptions.forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+                tempAvatar = opt.dataset.avatar;
+            };
+        });
+
+        document.getElementById('btnSaveProfile').onclick = () => {
+            const newAlias = aliasInput.value.trim();
+            if (newAlias && tempAvatar) {
+                Core.saveProfile(newAlias, tempAvatar);
+                location.reload(); 
+            } else {
+                alert('Asegúrate de ingresar un alias y seleccionar un retrato.');
+            }
+        };
+        
+        // 3. Actualizar Stats del Sidebar
+        const tripNum = document.getElementById('crewCountDisplay');
+        if (tripNum) tripNum.innerText = myCrew.length;
+        
+        const visasData = [
+            { key: 'Visa de Zarpe', imgActiva: 'img/Badge_1_Activo.png', imgBloqueada: 'img/Badge_1_InActivo.png', name: 'HITO 1: ARGONAUTA<br><span style="font-size:9px; color:var(--text-gray);">(Compromiso)</span>' },
+            { key: 'Visa de Navegacion', imgActiva: 'img/Badge_2_Activo.png', imgBloqueada: 'img/Badge_2_InActivo.png', name: 'HITO 2: NAVEGANTE<br><span style="font-size:9px; color:var(--text-gray);">(Introducción)</span>' },
+            { key: 'Visa de Aduanas', imgActiva: 'img/Badge_3_Activo.png', imgBloqueada: 'img/Badge_3_InActivo.png', name: 'HITO 3: ESTRATEGA<br><span style="font-size:9px; color:var(--text-gray);">(Evaluación)</span>' },
+            { key: 'Visa de Descarga', imgActiva: 'img/Badge_4_Activo.png', imgBloqueada: 'img/Badge_4_InActivo.png', name: 'HITO 4: TIMONEL<br><span style="font-size:9px; color:var(--text-gray);">(Entrenamiento)</span>' },
+            { key: 'Visa de Transito', imgActiva: 'img/Badge_5_Activo.png', imgBloqueada: 'img/Badge_5_InActivo.png', name: 'HITO 5: ULISES<br><span style="font-size:9px; color:var(--text-gray);">(Práctica Real)</span>' }
+        ];
+        
+        const visaKeys = visasData.map(v => v.key);
+        const teamPercent = Core.calculateProgressPercent(myCrew, visaKeys);
+        
+        const progFill = document.getElementById('teamProgressFill');
+        const progText = document.getElementById('teamProgressText');
+        if (progFill) progFill.style.width = teamPercent + '%';
+        if (progText) progText.textContent = teamPercent + '%';
+
+        // Actualizar Días Go-Live
+        const daysEl = document.getElementById('daysToGoLive');
+        if (daysEl) daysEl.textContent = Core.getDaysToGoLive();
+
+        // 4. Generar Tabla Grid
+        const table = document.getElementById('crewTableGrid');
+        if (table && myCrew.length > 0) {
+            
+            // Generar Headers
+            let headerHtml = `<div class="cell header-cell header-gray">TRIPULANTE</div>`;
+            visasData.forEach(v => {
+                headerHtml += `<div class="cell header-cell">${v.name}</div>`;
+            });
+
+            let rowsHtml = headerHtml;
+            
+            // Generar Filas por Tripulante
+            myCrew.forEach(member => {
+                rowsHtml += `
+                    <div class="cell crew-cell">
+                        <div class="crew-avatar"><span style="color:var(--silver); font-size:18px;">⚓</span></div>
+                        <div class="crew-info">
+                            <span class="crew-name">${Core.formatName(member)}</span>
+                            <span class="crew-role">DNI: ${member['ID Tripulante']}</span>
+                        </div>
+                    </div>
+                `;
+                
+                visasData.forEach(visa => {
+                    const isDone = member[visa.key] === 'Si';
+                    rowsHtml += `
+                        <div class="cell visa-cell">
+                            ${isDone 
+                                ? `<img src="${visa.imgActiva}" class="badge-img" alt="Insignia Completada">
+                                   <div class="prog-container"><div class="prog-bar"><div class="prog-fill-gold" style="width:100%"></div></div><span class="prog-text t-gold">100%</span></div>`
+                                : `<img src="${visa.imgBloqueada}" class="badge-img badge-locked" alt="Insignia Bloqueada">
+                                   <div class="prog-container"><div class="prog-bar"></div><span class="prog-text">0%</span></div>`
+                            }
+                        </div>
+                    `;
+                });
+            });
+            table.innerHTML = rowsHtml;
+        } else if (table) {
+            table.innerHTML = '<p style="text-align: center; color: var(--text-gray); grid-column: span 6; padding: 20px;">No tienes tripulación asignada en el manifiesto actual.</p>';
+        }
+
+        // 5. Diario de a Bordo (Feed)
+        const feedList = document.getElementById('feedList');
+        if (feedList) {
+            const achievements = Core.getLatestAchievements(allData, captainEmail);
+            feedList.innerHTML = achievements.length 
+                ? achievements.map(ach => {
+                    const avatarHtml = ach.avatar && (ach.avatar.includes('.webp') || ach.avatar.includes('.png') || ach.avatar.includes('.jpg')) 
+                                        ? `<img src="${ach.avatar}">` 
+                                        : `<span>${ach.avatar || '⚓'}</span>`;
+                    return `
+                    <div class="feed-item">
+                        <div class="feed-avatar">${avatarHtml}</div>
+                        <div class="feed-text">¡${ach.name} ha obtenido la ${ach.visa}!</div>
+                    </div>`;
+                }).join('')
+                : '<p style="font-size:11px; color:var(--text-gray); text-align:center;">Las aguas están tranquilas por ahora.</p>';
+        }
+
+        // Logout
+        const logoutBtn = document.querySelector('.header-left');
+        if (logoutBtn) {
+            logoutBtn.style.cursor = 'pointer';
+            logoutBtn.onclick = () => { if(confirm('¿Abandonar el puesto de mando (Cerrar sesión)?')) Core.logout(); };
+        }
+    });
+</script>
+
+</body>
+</html>

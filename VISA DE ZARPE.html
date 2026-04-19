@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desafío Ruta del Cambio SAP - Proyecto Ulises</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;0,900;1,400&family=Playfair+Display:ital,wght@0,600;0,800;0,900;1,600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* Paleta La Odisea */
+            --bg-parchment: #F5F4EF;
+            --navy-dark: #0F2035;
+            --navy-light: #1B365D;
+            --gold-primary: #C5A059;
+            --gold-light: #E6C875;
+            --text-dark: #112B47;
+            --text-gray: #5C6E80;
+            --silver: #8A9AAB;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+
+        body {
+            background-color: var(--bg-parchment);
+            background-image: linear-gradient(rgba(245, 244, 239, 0.8), rgba(245, 244, 239, 0.8)), url('img/Mapa_Travesia.webp'); /* FONDO CON CAPA DE LEGIBILIDAD */
+            background-size: cover; background-position: center; background-attachment: fixed;
+            font-family: 'Lato', sans-serif;
+            min-height: 100vh; width: 100vw; overflow-y: auto; overflow-x: hidden;
+            display: flex; justify-content: center; align-items: flex-start;
+        }
+
+        h1, h2, h3, .serif-text { font-family: 'Playfair Display', serif; }
+
+        /* Contenedor Principal */
+        .game-container {
+            position: relative; width: 100%; max-width: 1600px; min-height: 100vh;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        /* --- CABECERA --- */
+        header {
+            position: sticky; top: 0; left: 0; width: 100%; height: auto; min-height: 70px;
+            background: rgba(245, 244, 239, 0.95); border-bottom: 2px solid var(--gold-primary);
+            display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; padding: 10px 20px; z-index: 50;
+            box-shadow: 0 4px 15px rgba(15, 32, 53, 0.1); gap: 10px;
+        }
+        @media (max-width: 768px) {
+            header { 
+                flex-direction: row; 
+                flex-wrap: wrap;
+                justify-content: space-between; 
+                align-items: center;
+                padding: 10px;
+            }
+            .header-left { order: 1; flex: 0 0 auto; margin: 0; font-size: 14px; }
+            .header-left span { font-size: 18px; margin-right: 5px; }
+            .header-right { 
+                order: 2;
+                flex: 1 1 auto;
+                display: flex; 
+                justify-content: flex-end; 
+                margin: 0;
+            }
+            .user-id-card { 
+                width: auto; 
+                max-width: none;
+                justify-content: flex-end; 
+                padding: 4px 10px 4px 4px;
+                gap: 8px;
+            }
+            .id-avatar-wrapper { width: 38px; height: 38px; font-size: 16px; }
+            .id-alias { font-size: 13px; max-width: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .id-name { font-size: 10px; }
+            .id-info { text-align: right; }
+        }
+        .header-left { display: flex; align-items: center; font-size: 20px; font-weight: 900; color: var(--navy-dark); font-family: 'Playfair Display', serif;}
+        .header-left span { font-size: 24px; margin-right: 15px; cursor: pointer; color: var(--gold-primary); }
+
+        /* Placa de Identificación Superior */
+        .user-id-card {
+            background: #fff; border: 2px solid var(--silver); border-radius: 40px 15px 15px 40px;
+            display: flex; align-items: center; gap: 15px; padding: 5px 15px 5px 5px;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.05), 0 4px 10px rgba(15,32,53,0.1);
+        }
+        .id-avatar-wrapper {
+            width: 45px; height: 45px; background: var(--bg-parchment); border-radius: 50%;
+            border: 2px solid var(--navy-light); display: flex; justify-content: center; align-items: center;
+            font-size: 20px; position: relative; flex-shrink: 0; overflow: hidden;
+        }
+        .id-avatar-wrapper img { width: 100%; height: 100%; object-fit: cover; display: none; }
+        .id-info { display: flex; flex-direction: column; text-align: right; }
+        .id-alias { font-size: 14px; font-weight: 900; color: var(--navy-dark); font-family: 'Playfair Display', serif; line-height: 1.1; max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+        .id-name { font-size: 10px; font-weight: 700; color: var(--text-gray); text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* --- TÍTULOS CENTRALES --- */
+        .titles-wrapper {
+            position: relative; top: 20px; text-align: center; z-index: 30; width: 90%; margin-bottom: 30px;
+        }
+        .title-main {
+            font-size: 55px; font-weight: 900; color: var(--navy-dark); margin: 0; line-height: 1.1; letter-spacing: 2px;
+            text-shadow: 2px 2px 0px #fff, -2px -2px 0px #fff, 2px -2px 0px #fff, -2px 2px 0px #fff, 0 4px 8px rgba(0,0,0,0.2);
+            text-transform: uppercase;
+        }
+        .title-desc {
+            font-size: 24px; font-weight: 700; color: var(--text-gray); margin-top: 10px; font-family: 'Lato', sans-serif;
+            letter-spacing: 1px;
+        }
+        @media (max-width: 768px) {
+            .title-main { font-size: 32px; }
+            .title-desc { font-size: 16px; }
+        }
+
+        /* --- PANELES ODISEA (Base) --- */
+        .odyssey-panel {
+            background: rgba(245, 244, 239, 0.9); border: 2px solid var(--navy-light);
+            position: relative; box-shadow: 5px 5px 20px rgba(15, 32, 53, 0.2);
+        }
+        .odyssey-panel::before {
+            content: ''; position: absolute; top: 4px; left: 4px; right: 4px; bottom: 4px;
+            border: 1px solid rgba(27, 54, 93, 0.2); pointer-events: none; z-index: 0;
+        }
+        .rivet {
+            position: absolute; width: 6px; height: 6px; background: var(--gold-primary); border-radius: 50%;
+            box-shadow: inset 1px 1px 2px rgba(255,255,255,0.5), 1px 1px 2px rgba(0,0,0,0.4); z-index: 10;
+        }
+        .r-tl { top: 8px; left: 8px; } .r-tr { top: 8px; right: 8px; }
+        .r-bl { bottom: 8px; left: 8px; } .r-br { bottom: 8px; right: 8px; }
+
+
+        /* --- FLUJO DE 5 TARJETAS VISAS --- */
+        .visas-container {
+            position: relative; display: flex; z-index: 20; gap: 5px; margin: 40px auto;
+        }
+        
+        @media (max-width: 1200px) {
+            .visas-container { flex-wrap: wrap; justify-content: center; left: 0; width: 95%; top: 0; }
+            .visa-card { margin-left: 0 !important; margin-bottom: 20px; }
+            .giant-badge, .hero-character { display: none; }
+            .dias-widget { position: static !important; width: 90% !important; margin: 20px auto !important; }
+            .bottom-panel { position: static !important; transform: none !important; width: 90% !important; margin: 20px auto 40px !important; }
+        }
+        
+        .visa-card {
+            width: 220px; height: 220px; position: relative;
+            filter: drop-shadow(0 12px 15px rgba(0,0,0,0.15));
+            margin-left: -40px; 
+        }
+        .visa-card:first-child { margin-left: 0; }
+
+        /* Formas SVG (Usando los colores náuticos) */
+        .visa-bg-svg { position: absolute; top: 0; left: 0; width: 105%; height: 100%; z-index: 1; }
+        
+        .visa-content {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5;
+            padding: 80px 25px 20px 50px; text-align: center; 
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; /* Ajuste vertical al espacio disponible */
+        }
+        .visa-card:first-child .visa-content { padding-left: 25px; }
+
+        .v-title { font-size: 14px; font-weight: 900; color: var(--navy-dark); line-height: 1.1; margin-bottom: 8px; font-family: 'Playfair Display', serif;}
+        .v-desc { font-size: 11px; font-weight: 700; color: var(--text-gray); line-height: 1.3;}
+
+        /* Candado Superior */
+        .v-badge-container {
+            position: absolute; top: 0px; left: 50%; transform: translateX(-50%); z-index: 10;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .v-hook { font-size: 24px; color: var(--silver); margin-bottom: -5px; text-shadow: 0 2px 2px rgba(0,0,0,0.2); z-index: 11;}
+        .v-badge-img {
+            width: 90px; height: 90px; object-fit: contain; filter: drop-shadow(0 5px 8px rgba(0,0,0,0.2));
+        }
+        .giant-badge {
+            position: absolute; bottom: 40px; left: calc(50% + 340px);
+            width: 250px; height: 250px; z-index: 30;
+            display: flex; justify-content: center; align-items: center;
+            filter: drop-shadow(0 15px 20px rgba(0,0,0,0.4));
+        }
+        .giant-badge img { width: 100%; height: 100%; object-fit: contain; }
+        
+        /* Personaje Capitán */
+        .hero-character {
+            position: absolute; bottom: 40px; right: calc(50% + 340px);
+            width: 250px; height: 250px; z-index: 25;
+            display: flex; align-items: flex-end; justify-content: center;
+        }
+        .hero-character img { height: 90%; object-fit: contain; filter: drop-shadow(5px 10px 15px rgba(0,0,0,0.3));}
+
+        /* --- PANEL INFERIOR CENTRAL (La Firma) --- */
+        .bottom-panel {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            padding: 30px 40px; width: 650px; display: flex; flex-direction: column; align-items: center; z-index: 30;
+            background: rgba(245, 244, 239, 0.98);
+            box-shadow: 0 25px 50px -12px rgba(15, 32, 53, 0.6), 0 15px 25px -5px rgba(15, 32, 53, 0.3), inset 0 2px 0 rgba(255,255,255,0.8);
+            border: 3px solid var(--navy-light); border-radius: 12px;
+        }
+        @media (max-width: 480px) {
+            .bottom-panel { padding: 20px; }
+            .sig-line { width: 100% !important; }
+        }
+        .bp-title { font-size: 18px; font-weight: 900; color: var(--navy-dark); margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px;}
+        
+        .signature-box { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; position: relative; z-index: 5;}
+        .sig-text { font-size: 18px; font-weight: 900; color: var(--text-gray); font-family: 'Playfair Display', serif; }
+        .sig-line { 
+            border-bottom: 2px solid var(--navy-light); width: 300px; font-size: 24px; font-weight: 900; 
+            color: var(--navy-dark); text-align: center; padding-bottom: 2px; font-family: 'Playfair Display', serif; font-style: italic;
+        }
+        .sig-check { font-size: 24px; color: #5BCB5F; }
+
+        .btn-action {
+            background: linear-gradient(180deg, var(--gold-light) 0%, var(--gold-primary) 100%);
+            border: 3px solid var(--navy-dark); border-radius: 12px; padding: 15px 30px;
+            box-shadow: 0 8px 0 #9E7D3A, 0 15px 20px rgba(0,0,0,0.2);
+            text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center;
+            transition: 0.2s; width: 100%; position: relative; z-index: 5;
+        }
+        .btn-action:active { transform: translateY(8px); box-shadow: 0 0 0 #9E7D3A, 0 5px 10px rgba(0,0,0,0.2); }
+        .btn-title { font-size: 18px; font-weight: 900; color: var(--navy-dark); display: flex; align-items: center; gap: 10px; letter-spacing: 0.5px;}
+        
+        .progress-pill {
+            background: #EAF4F9; color: var(--navy-dark); font-size: 12px; font-weight: 900; 
+            padding: 6px 20px; border-radius: 20px; border: 2px solid var(--silver); margin-top: 25px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        /* --- WIDGET AL COSTADO DE VISAS --- */
+        .dias-widget {
+            position: absolute; top: 200px; left: 40px; background: #fff;
+            padding: 15px 20px; text-align: center; z-index: 30; border-radius: 12px;
+            width: 230px; box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .dw-title { font-size: 12px; font-weight: 900; color: var(--text-gray); text-transform: uppercase; letter-spacing: 1px;}
+        .dw-value { font-size: 32px; font-weight: 900; color: var(--navy-dark); font-family: 'Playfair Display', serif; line-height: 1; margin-top: 5px;}
+
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+
+    <!-- Cabecera Superior -->
+    <header>
+        <div class="header-left">
+            <span>☰</span> Proyecto Ulises
+        </div>
+        <div class="header-right">
+            <!-- Placa de Identificación -->
+            <div class="user-id-card">
+                <div class="id-avatar-wrapper">
+                    <span id="displayAvatarIcon">⚓</span>
+                    <img id="displayAvatarImg" src="" alt="Avatar">
+                </div>
+                <div class="id-info">
+                    <span class="id-alias" id="displayAlias">¡Bienvenido!</span>
+                    <span class="id-name" id="displayName">Cargando...</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Títulos Centrales -->
+    <div class="titles-wrapper">
+        <h1 class="title-main serif-text">¡BIENVENIDO A LA TRAVESÍA!</h1>
+        <div class="title-desc">EL PRIMER PASO ES ACEPTAR EL RETO Y ZARPAR CON TU EQUIPO</div>
+    </div>
+
+    <!-- Medalla Gigante (Derecha del panel) -->
+    <div class="giant-badge">
+        <!-- ⚠️ IMAGEN 1: INSIGNIA ACTIVA GIGANTE -->
+        <img src="img/Badge1_full.png" alt="Insignia Argonauta" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2907/2907150.png'">
+    </div>
+    
+    <!-- Personaje Capitán (Izquierda del panel) -->
+    <div class="hero-character">
+        <!-- ⚠️ IMAGEN 2: CAPITÁN ILUSTRADO -->
+        <img src="img/Ulises.png" alt="Capitán" onerror="this.style.display='none'">
+    </div>
+
+    <!-- FLUJO DE 5 TARJETAS VISAS -->
+    <div class="visas-container">
+        
+        <!-- Tarjeta 1 (Recta Izquierda, Flecha Derecha) -->
+        <div class="visa-card">
+            <svg class="visa-bg-svg" viewBox="0 0 220 240">
+                <defs>
+                    <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="30%" stop-color="#EAF4F9"/>
+                        <stop offset="30%" stop-color="#FFF"/>
+                    </linearGradient>
+                </defs>
+                <path d="M 4,4 L 196,4 L 216,120 L 196,236 L 4,236 Z" fill="url(#g1)" stroke="#8A9AAB" stroke-width="4" stroke-linejoin="round"/>
+            </svg>
+            <div class="v-badge-container">
+
+                <img src="img/Badge_1_Activo.png" class="v-badge-img" alt="Insignia Zarpe">
+            </div>
+            <div class="visa-content">
+                <div class="v-title">DESAFIO 1: <br>La Profesía</div>
+                <div class="v-desc">Debes manifestar tu compromiso a ser un protagonista en este desafío.</div>
+            </div>
+        </div>
+
+        <!-- Tarjeta 2 -->
+        <div class="visa-card">
+            <svg class="visa-bg-svg" viewBox="0 0 220 240">
+                <defs>
+                    <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="30%" stop-color="#EEF5F9"/>
+                        <stop offset="30%" stop-color="#FFF"/>
+                    </linearGradient>
+                </defs>
+                <path d="M 4,4 L 196,4 L 216,120 L 196,236 L 4,236 L 24,120 Z" fill="url(#g2)" stroke="#8A9AAB" stroke-width="4" stroke-linejoin="round"/>
+            </svg>
+            <div class="v-badge-container">
+
+                <img src="img/Badge_2_Activo.png" class="v-badge-img" alt="Insignia Navegación">
+            </div>
+            <div class="visa-content">
+                <div class="v-title">DESAFIO 2:<br>Salida de Troya</div>
+                <div class="v-desc">Capacitación introductoria para aprender los procesos en SAP.</div>
+            </div>
+        </div>
+
+        <!-- Tarjeta 3 -->
+        <div class="visa-card">
+            <svg class="visa-bg-svg" viewBox="0 0 220 240">
+                <path d="M 4,4 L 196,4 L 216,120 L 196,236 L 4,236 L 24,120 Z" fill="url(#g2)" stroke="#8A9AAB" stroke-width="4" stroke-linejoin="round"/>
+            </svg>
+            <div class="v-badge-container">
+
+                <img src="img/Badge_3_Activo.png" class="v-badge-img" alt="Insignia Aduanas">
+            </div>
+            <div class="visa-content">
+                <div class="v-title">DESAFIO 3: <br>La Cueva y la Isla</div>
+                <div class="v-desc">Evaluación oficial de tu conocimiento teórico del sistema.</div>
+            </div>
+        </div>
+
+        <!-- Tarjeta 4 -->
+        <div class="visa-card">
+            <svg class="visa-bg-svg" viewBox="0 0 220 240">
+                <path d="M 4,4 L 196,4 L 216,120 L 196,236 L 4,236 L 24,120 Z" fill="url(#g2)" stroke="#8A9AAB" stroke-width="4" stroke-linejoin="round"/>
+            </svg>
+            <div class="v-badge-container">
+
+                <img src="img/Badge_4_Activo.png" class="v-badge-img" alt="Insignia Descarga">
+            </div>
+            <div class="visa-content">
+                <div class="v-title">DESAFIO 4: <br>Estrecho de Sirenas</div>
+                <div class="v-desc">Capacitación específica para tu rol sobre la nueva forma de trabajar.</div>
+            </div>
+        </div>
+
+        <!-- Tarjeta 5 (Muesca Izquierda, Recta Derecha) -->
+        <div class="visa-card">
+            <svg class="visa-bg-svg" viewBox="0 0 220 240">
+                <path d="M 4,4 L 216,4 L 216,236 L 4,236 L 24,120 Z" fill="url(#g2)" stroke="#8A9AAB" stroke-width="4" stroke-linejoin="round"/>
+            </svg>
+            <div class="v-badge-container">
+
+                <img src="img/Badge_5_Activo.png" class="v-badge-img" alt="Insignia Tránsito">
+            </div>
+            <div class="visa-content" style="padding-right: 10px;">
+                <div class="v-title">DESAFIO 5: <br>Ítaca</div>
+                <div class="v-desc">Última evaluación de ejercicios prácticos en el sistema.</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Panel Inferior (El Pacto) -->
+    <div class="odyssey-panel bottom-panel">
+        <div class="rivet r-tl"></div><div class="rivet r-tr"></div><div class="rivet r-bl"></div><div class="rivet r-br"></div>
+        <div class="bp-title serif-text">TU PLAN DE NAVEGACIÓN HACIA S/4HANA</div>
+        
+        <div class="signature-box">
+            <span class="sig-text">Mi Firma:</span>
+            <div class="sig-line" id="sigLineName">CARGANDO...</div>
+            <span class="sig-check">✅</span>
+        </div>
+
+        <div class="btn-action" id="btnAcceptVisa">
+            <div class="btn-title"><span>✔️</span> SÍ, ME COMPROMETO A CONTRIBUIR AL ÉXITO DEL PROYECTO SAP PARA PORTLAND</div>
+        </div>
+
+
+    </div>
+
+    <!-- Widget Izquierdo -->
+    <div class="odyssey-panel dias-widget">
+        <div class="rivet r-tl"></div><div class="rivet r-tr"></div><div class="rivet r-bl"></div><div class="rivet r-br"></div>
+        <div class="dw-title">DÍAS PARA ÍTACA (GO-LIVE)</div>
+        <div class="dw-value" id="daysToGoLive">180</div>
+    </div>
+
+</div>
+
+<!-- SCRIPTS DE CORE Y LÓGICA DE ACEPTACIÓN -->
+<script src="scripts/core.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const user = Core.checkSession();
+        if (!user) return;
+        
+        const profile = Core.getProfile();
+        const role = localStorage.getItem('portland_role');
+
+        // --- ACTUALIZAR PLACA DE IDENTIFICACIÓN ---
+        const displayAlias = document.getElementById('displayAlias');
+        const displayName = document.getElementById('displayName');
+        const displayAvatarImg = document.getElementById('displayAvatarImg');
+        const displayAvatarIcon = document.getElementById('displayAvatarIcon');
+        
+        // 1. Nombre Real (Del CSV)
+        if (displayName) displayName.innerText = Core.formatName(user);
+
+        // 2. Alias o Saludo por defecto
+        if (displayAlias) {
+            if (profile.aliasUsuario) {
+                displayAlias.innerText = profile.aliasUsuario;
+            } else {
+                displayAlias.innerText = 'Tripulante ' + Core.formatGreeting(user);
+            }
+        }
+
+        // 3. Avatar (Imagen PNG/WebP o Emoji)
+        if (profile.avatarUsuario && (profile.avatarUsuario.includes('.webp') || profile.avatarUsuario.includes('.png') || profile.avatarUsuario.includes('.jpg'))) {
+            if (displayAvatarIcon) displayAvatarIcon.style.display = 'none';
+            if (displayAvatarImg) {
+                displayAvatarImg.src = profile.avatarUsuario;
+                displayAvatarImg.style.display = 'block';
+            }
+        } else if (profile.avatarUsuario) {
+            if (displayAvatarIcon) displayAvatarIcon.innerText = profile.avatarUsuario;
+        }
+        
+        // Firma
+        const sigLine = document.getElementById('sigLineName');
+        if (sigLine) sigLine.innerText = Core.formatName(user).toUpperCase();
+
+        // Days to Go-Live
+        const elDays = document.getElementById('daysToGoLive');
+        if (elDays) elDays.innerText = Core.getDaysToGoLive();
+
+        // Si la imagen del capitán real carga bien, escondemos el emoji fallback
+        const capitanImg = document.querySelector('.hero-character img');
+        const fallback = document.getElementById('fallbackCaptain');
+        if(capitanImg && fallback) {
+            capitanImg.onload = () => fallback.style.display = 'none';
+        }
+
+        // Setup Accept Button
+        const btnAccept = document.getElementById('btnAcceptVisa');
+        btnAccept.addEventListener('click', async () => {
+            // Visual Feedback
+            btnAccept.innerHTML = '<div class="btn-title"><span>⏳</span> ENVIANDO PASAPORTE A CAPITANÍA...</div>';
+            btnAccept.style.pointerEvents = 'none';
+
+            // Send to Webhook
+            try {
+                await fetch("https://script.google.com/macros/s/AKfycbxcp3HlO-f4tK8h5pcQMaBPqecOAH-4UY2lfRcUkEl8oSQYTPqKyoHWm5ksop3EMRKKmQ/exec", {
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        alias: profile.aliasUsuario,
+                        avatar: profile.avatarUsuario,
+                        email: user.Email,
+                        aceptoTyC: true,
+                        userAgent: navigator.userAgent,
+                        ip: "N/A"
+                    })
+                });
+            } catch(e) {
+                console.log('Error registrando visa:', e);
+            }
+
+            // Save local persistance vinculada al mail del usuario
+            localStorage.setItem('portland_visa1_accepted_' + user.Email, 'true');
+            
+            // Redirect smoothly to dashboard
+            setTimeout(() => {
+                const dest = role === 'Capitan' ? 'Capitan.html' : (role === 'Almirante' ? 'Almirante.html' : 'Tripulante.html');
+                window.location.href = dest;
+            }, 500); 
+        });
+    });
+</script>
+
+</body>
+</html>
