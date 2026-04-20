@@ -121,7 +121,7 @@
             background: #fff; border: 2px solid var(--silver); border-radius: 40px 15px 15px 40px;
             display: flex; align-items: center; gap: 15px; padding: 5px 15px 5px 5px;
             box-shadow: inset 0 2px 5px rgba(0,0,0,0.05), 0 4px 10px rgba(15,32,53,0.1);
-            transition: 0.3s; cursor: pointer;
+            transition: 0.3s; cursor: pointer; -webkit-tap-highlight-color: transparent;
         }
         .user-id-card:hover { border-color: var(--gold-primary); box-shadow: inset 0 2px 5px rgba(0,0,0,0.05), 0 6px 15px rgba(197, 160, 89, 0.2); }
         
@@ -140,7 +140,7 @@
         .user-id-card:hover .edit-badge { opacity: 1; bottom: 0; right: 0; }
 
         .id-info { display: flex; flex-direction: column; text-align: right; }
-        .id-alias { font-size: 16px; font-weight: 900; color: var(--navy-dark); font-family: 'Playfair Display', serif; line-height: 1.1; max-width: 270px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+        .id-alias { font-size: 16px; font-weight: 900; color: var(--navy-dark); font-family: 'Playfair Display', serif; line-height: 1.1; max-width: 290px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         .id-name { font-size: 11px; font-weight: 700; color: var(--text-gray); text-transform: uppercase; letter-spacing: 0.5px; }
 
         /* --- CONTENEDOR PRINCIPAL FLEXBOX --- */
@@ -436,7 +436,7 @@
             <h2>Identidad de Capitán</h2>
             <p>Actualiza tu alias y retrato para el registro oficial.</p>
             
-            <input type="text" id="aliasInput" class="alias-input" placeholder="Tu alias náutico..." maxlength="20">
+            <input type="text" id="aliasInput" class="alias-input" placeholder="Tu alias náutico..." maxlength="21">
             
             <div class="avatar-gallery" id="avatarGallery">
                 <div class="avatar-option" data-avatar="img/Avatar01.webp"><img src="img/Avatar01.webp" alt="Avatar 1"></div>
@@ -475,8 +475,8 @@
         
         const captainEmail = user.Email;
         
-        // 1. Filtrar tripulación por email del capitán
-        const myCrew = allData.filter(u => u['Capitan a Cargo'] === captainEmail);
+        // 1. Filtrar tripulación por email del capitán (cálculo transitivo para que coincida con el Almirante)
+        const myCrew = Core.getTransitiveSubordinates(captainEmail, allData);
         
         // --- ACTUALIZAR PLACA DE IDENTIFICACIÓN ---
         const profile = Core.getProfile();
