@@ -471,11 +471,24 @@
 
         const allData = await Core.loadAppData();
         
-        // Sincronizar el objeto de usuario local con los datos frescos (incluyendo el parche local de la visa)
+        // Sincronizar el objeto de usuario local
         const freshUser = allData.find(u => u.Email.toLowerCase() === user.Email.toLowerCase());
         if (freshUser) {
             Object.assign(user, freshUser);
         }
+
+        // --- LÓGICA DE JERARQUÍA Y FLOTA ---
+        // El "Súper Almirante" es quien se reporta a sí mismo (Visión Total)
+        const isSuperAdmiral = user.Email.toLowerCase() === (user['Capitan a Cargo'] || '').toLowerCase();
+        
+        // Mi "Flota" (para estadísticas globales al pie)
+        const myFleet = isSuperAdmiral ? allData : Core.getTransitiveSubordinates(user.Email, allData);
+        
+        // Mis Reportes Directos (para las filas de la tabla)
+        const directReports = allData.filter(u => 
+            (u['Capitan a Cargo'] || '').toLowerCase() === user.Email.toLowerCase() && 
+            u.Email.toLowerCase() !== user.Email.toLowerCase()
+        );
         
         // Configurar Perfil Almirante
         const profile = Core.getProfile();
@@ -484,10 +497,8 @@
         const displayAvatarImg = document.getElementById('displayAvatarImg');
         const displayAvatarIcon = document.getElementById('displayAvatarIcon');
         
-        // 1. Nombre Real (Del CSV)
         if (displayName) displayName.innerText = Core.formatName(user);
 
-        // 2. Alias o Saludo por defecto
         if (displayAlias) {
             const isAdmiral = window.location.pathname.includes('Almirante');
             const isCaptain = window.location.pathname.includes('Capitan');
@@ -500,7 +511,6 @@
             }
         }
 
-        // 3. Avatar (Imagen PNG/WebP o Emoji)
         if (profile.avatarUsuario && (profile.avatarUsuario.includes('.webp') || profile.avatarUsuario.includes('.png') || profile.avatarUsuario.includes('.jpg'))) {
             if (displayAvatarIcon) displayAvatarIcon.style.display = 'none';
             if (displayAvatarImg) {
@@ -543,16 +553,16 @@
             }
         };
 
-        // --- LÓGICA DE DATOS DEL ALMIRANTE ---
+        // --- LÓGICA DE DATOS DEL ALMIRANTE (FILTRADO) ---
 
-        // 1. Estadísticas Globales Básicas
+        // 1. Estadísticas Globales Filtradas
         const elActiveCrew = document.getElementById('activeCrewCount');
-        if (elActiveCrew) elActiveCrew.innerText = allData.length;
+        if (elActiveCrew) elActiveCrew.innerText = myFleet.length;
 
         const daysEl = document.getElementById('daysToGoLive');
         if (daysEl) daysEl.textContent = Core.getDaysToGoLive();
 
-        // 2. Definición de Visas (Imágenes)
+        // 2. Definición de Visas
         const visasData = [
             { key: 'Visa de Zarpe', imgActiva: 'img/Badge_1_Activo.png', imgBloqueada: 'img/Badge_1_InActivo.png', name: 'HITO 1: ARGONAUTA<br><span style="font-size:9px; color:var(--text-gray);">(Compromiso)</span>' },
             { key: 'Visa de Navegacion', imgActiva: 'img/Badge_2_Activo.png', imgBloqueada: 'img/Badge_2_InActivo.png', name: 'HITO 2: NAVEGANTE<br><span style="font-size:9px; color:var(--text-gray);">(Introducción)</span>' },
@@ -562,13 +572,12 @@
         ];
         const visaKeys = visasData.map(v => v.key);
 
-        // 3. Generar Tabla de Capitanes
-        const captainsList = allData.filter(u => u['Rango'] === 'Capitan'); // Asumiendo que el CSV tiene columna 'Rango'
+        // 3. Generar Tabla con Reportes Directos
         const table = document.getElementById('admiralTableGrid');
 
-        if (table && captainsList.length > 0) {
+        if (table && directReports.length > 0) {
             let headerHtml = `
-                <div class="cell header-cell header-gray">CAPITANES</div>
+                <div class="cell header-cell header-gray">RESPONSABLE</div>
                 <div class="cell header-cell header-gray">TRIPULACIÓN</div>
             `;
             visasData.forEach(v => headerHtml += `<div class="cell header-cell">${v.name}</div>`);
@@ -576,30 +585,32 @@
 
             let rowsHtml = headerHtml;
             
-            captainsList.forEach(captain => {
-                const myCrew = allData.filter(u => u['Capitan a Cargo'] === captain.Email);
-                
-                // Si el capitán no tiene tripulación, saltarlo para no mostrar filas vacías o divisiones por 0
-                if(myCrew.length === 0) return;
+            directReports.forEach(report => {
+                // Cálculo de sub-tripulación para este reporte
+                let subCrew = [];
+                if (report['Rango'] === 'Tripulante') {
+                    subCrew = [report];
+                } else {
+                    subCrew = Core.getTransitiveSubordinates(report.Email, allData);
+                }
 
                 rowsHtml += `
                     <div class="cell crew-cell">
-                        <div class="crew-avatar"><span style="color:var(--silver); font-size:18px;">⚓</span></div>
+                        <div class="crew-avatar"><span style="color:var(--silver); font-size:18px;">${report['Rango'] === 'Tripulante' ? '🧔' : '⚓'}</span></div>
                         <div class="crew-info">
-                            <span class="crew-name">${Core.formatName(captain)}</span>
-                            <span class="crew-role">${captain['Email']}</span>
+                            <span class="crew-name">${Core.formatName(report)}</span>
+                            <span class="crew-role">${report['Rango']}</span>
                         </div>
                     </div>
                     <div class="cell trip-cell">
-                        <div class="trip-number-box"><span class="trip-icon">👥</span> ${myCrew.length}</div>
-                        <div class="trip-label">Marineros</div>
+                        <div class="trip-number-box"><span class="trip-icon">👥</span> ${subCrew.length}</div>
+                        <div class="trip-label">${subCrew.length === 1 ? 'Tripulante' : 'Marineros'}</div>
                     </div>
                 `;
 
-                // Celdas de Insignias (Con el número sobre la imagen)
                 visasData.forEach(visa => {
-                    const completed = myCrew.filter(u => u[visa.key] === 'Si').length;
-                    const percent = Math.round((completed / myCrew.length) * 100);
+                    const completed = subCrew.filter(u => u[visa.key] === 'Si').length;
+                    const percent = subCrew.length > 0 ? Math.round((completed / subCrew.length) * 100) : 0;
                     
                     const isDoneAny = completed > 0;
                     const imgSrc = isDoneAny ? visa.imgActiva : visa.imgBloqueada;
@@ -621,8 +632,7 @@
                     `;
                 });
 
-                // Resumen del Equipo
-                const teamPercent = Core.calculateProgressPercent(myCrew, visaKeys);
+                const teamPercent = Core.calculateProgressPercent(subCrew, visaKeys);
                 rowsHtml += `
                     <div class="cell resumen-cell">
                         <div class="summary-prog-row">
@@ -634,21 +644,20 @@
             });
             table.innerHTML = rowsHtml;
         } else if (table) {
-            table.innerHTML = '<p style="text-align: center; color: var(--text-gray); grid-column: span 8; padding: 20px;">No se encontraron capitanes en los registros de la flota.</p>';
+            table.innerHTML = '<p style="text-align: center; color: var(--text-gray); grid-column: span 8; padding: 20px;">No se encontraron reportes directos para su mando.</p>';
         }
 
-        // 4. Progreso Global de toda la data
-        const gPercent = Core.calculateProgressPercent(allData, visaKeys);
+        // 4. Progreso Global (Filtrado por Flota)
+        const gPercent = Core.calculateProgressPercent(myFleet, visaKeys);
         const globalFill = document.getElementById('globalProgressFill');
         const globalText = document.getElementById('globalProgressText');
         if (globalFill) globalFill.style.width = gPercent + '%';
         if (globalText) globalText.textContent = gPercent + '%';
 
-        // 5. Avance por País
+        // 5. Avance por País (Filtrado por Flota)
         const countryPanel = document.getElementById('countryPanel');
         if (countryPanel) {
-            // Obtener países únicos del CSV
-            const countries = [...new Set(allData.map(item => item['Bandera']).filter(Boolean))];
+            const countries = [...new Set(myFleet.map(item => item['Bandera']).filter(Boolean))];
             
             let countryHtml = `
                 <div class="rivet r-tl"></div><div class="rivet r-tr"></div><div class="rivet r-bl"></div><div class="rivet r-br"></div>
@@ -656,12 +665,11 @@
             `;
             
             if (countries.length === 0) {
-                countryHtml += '<p style="text-align:center; font-size:12px; color:var(--text-gray);">Sin datos territoriales.</p>';
+                countryHtml += '<p style="text-align:center; font-size:12px; color:var(--text-gray);">Sin datos territoriales en esta flota.</p>';
             } else {
                 countries.forEach(country => {
-                    const cCrew = allData.filter(u => u['Bandera'] === country);
+                    const cCrew = myFleet.filter(u => u['Bandera'] === country);
                     const cPercent = Core.calculateProgressPercent(cCrew, visaKeys);
-                    // Tomar las primeras dos letras del país para la cajita (Ej: CH, PE, CO)
                     const shortName = country.substring(0, 2).toUpperCase(); 
 
                     countryHtml += `
@@ -678,7 +686,6 @@
             countryPanel.innerHTML = countryHtml;
         }
 
-        // Logout
         const logoutBtn = document.querySelector('.header-left');
         if (logoutBtn) {
             logoutBtn.style.cursor = 'pointer';

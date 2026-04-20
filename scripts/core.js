@@ -259,6 +259,37 @@ function getDaysToGoLive() {
     return days > 0 ? days : 0;
 }
 
+/**
+ * Obtiene todos los subordinados de manera recursiva (transitiva).
+ * @param {string} email - Email del superior.
+ * @param {Array} allData - Todos los datos disponibles.
+ */
+function getTransitiveSubordinates(email, allData) {
+    if (!email) return [];
+    let result = [];
+    const direct = allData.filter(u => (u['Capitan a Cargo'] || '').toLowerCase() === email.toLowerCase() && u.Email.toLowerCase() !== email.toLowerCase());
+    
+    result.push(...direct);
+    
+    direct.forEach(sub => {
+        // Solo buscamos más abajo si el subordinado no es un tripulante raso (optimización)
+        if (sub['Rango'] !== 'Tripulante') {
+            result.push(...getTransitiveSubordinates(sub.Email, allData));
+        }
+    });
+    
+    // Eliminar duplicados
+    const unique = [];
+    const emails = new Set();
+    result.forEach(u => {
+        if (u.Email && !emails.has(u.Email.toLowerCase())) {
+            emails.add(u.Email.toLowerCase());
+            unique.push(u);
+        }
+    });
+    return unique;
+}
+
 // Exportar globalmente
 window.Core = {
     loadAppData,
@@ -273,5 +304,6 @@ window.Core = {
     calculateProgressPercent,
     getDaysToGoLive,
     saveProfile,
-    getProfile
+    getProfile,
+    getTransitiveSubordinates
 };
