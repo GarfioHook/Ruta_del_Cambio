@@ -331,6 +331,11 @@
     let tripulantes = [];
     let currentUser = null;
     let currentRole = null;
+    // Cache de la validación del webhook para el usuario actual
+    let webhookVisaCache = null;
+    let webhookFetchInProgress = false;
+
+    const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxcp3HlO-f4tK8h5pcQMaBPqecOAH-4UY2lfRcUkEl8oSQYTPqKyoHWm5ksop3EMRKKmQ/exec';
 
     document.addEventListener('DOMContentLoaded', async () => {
         // Establecer el video a cámara lenta (50%)
@@ -359,6 +364,30 @@
     const defaultAvatarIcon = document.getElementById('defaultAvatarIcon');
     const fichaAvatarImg = document.getElementById('fichaAvatarImg');
 
+    /**
+     * Consulta al Webhook si el usuario ya aceptó la Visa de Zarpe.
+     * Guarda el resultado en el caché local y en localStorage.
+     */
+    async function prefetchWebhookVisa(email) {
+        if (webhookFetchInProgress) return;
+        webhookFetchInProgress = true;
+        try {
+            const response = await fetch(`${WEBHOOK_URL}?email=${encodeURIComponent(email)}`);
+            const data = await response.json();
+            if (data && data.visaZarpe === true) {
+                webhookVisaCache = true;
+                // Persistir en localStorage para futuros accesos desde el mismo equipo
+                localStorage.setItem('portland_visa1_accepted_' + email, 'true');
+            } else {
+                webhookVisaCache = false;
+            }
+        } catch (err) {
+            console.log('Webhook no disponible o sin respuesta:', err);
+            webhookVisaCache = null; // null = indeterminado (no falla el flujo)
+        }
+        webhookFetchInProgress = false;
+    }
+
     input.addEventListener('input', function() {
         const value = this.value.toLowerCase().trim();
         
@@ -374,12 +403,28 @@
         if (currentUser) {
             currentRole = Core.getUserRole(value, tripulantes);
             fichaName.textContent = Core.formatName(currentUser);
+
+            // Resetear caché de webhook para este nuevo usuario identificado
+            webhookVisaCache = null;
+            webhookFetchInProgress = false;
+
+            // --- PRE-FETCH del Webhook si el CSV aún no tiene la visa marcada ---
+            const visaKey = 'portland_visa1_accepted_' + currentUser.Email;
+            const csvTieneVisa = currentUser['Visa de Zarpe'] === 'Si';
+            const localTieneVisa = !!localStorage.getItem(visaKey);
+
+            if (!csvTieneVisa && !localTieneVisa) {
+                // Consultamos al Webhook de fondo para tener el resultado listo antes del clic
+                prefetchWebhookVisa(currentUser.Email);
+            } else if (csvTieneVisa || localTieneVisa) {
+                webhookVisaCache = true; // Ya sabemos que tiene visa, no necesitamos el webhook
+            }
             
             // Revisa si ya tiene perfil guardado localmente usando Core
             const profile = Core.getProfile();
             if(profile.avatarUsuario && (profile.avatarUsuario.includes('img/') || profile.avatarUsuario.includes('.webp'))) {
                 defaultAvatarIcon.style.display = 'none';
-                fichaAvatarImg.src = profile.avatarUsuario; // Carga la imagen guardada
+                fichaAvatarImg.src = profile.avatarUsuario;
                 fichaAvatarImg.style.display = 'block';
             } else {
                 defaultAvatarIcon.style.display = 'block';
@@ -407,6 +452,7 @@
             btnAccess.classList.remove('active');
             currentRole = null;
             currentUser = null;
+            webhookVisaCache = null;
         }
     });
 
@@ -415,7 +461,6 @@
             Core.saveSession(currentUser, currentRole);
             
             const profile = Core.getProfile();
-            // Si NO tiene un avatar que sea una ruta de imagen válida (.webp o .png)
             if (!profile.avatarUsuario || (!profile.avatarUsuario.includes('.webp') && !profile.avatarUsuario.includes('.png'))) {
                 document.getElementById('loginPanel').style.display = 'none';
                 document.getElementById('profilePanel').style.display = 'block';
@@ -432,7 +477,7 @@
         opt.onclick = () => {
             avatarOptions.forEach(o => o.classList.remove('selected'));
             opt.classList.add('selected');
-            selectedAvatarImg = opt.dataset.avatar; // Guarda la ruta 'img/avatar_X.png'
+            selectedAvatarImg = opt.dataset.avatar;
         };
     });
 
@@ -441,7 +486,6 @@
         if (!alias) return alert('Por favor, ingresa un alias náutico.');
         if (!selectedAvatarImg) return alert('Por favor, selecciona un retrato.');
 
-        // Guardar Perfil usando la función centralizada de Core
         Core.saveProfile(alias, selectedAvatarImg);
         
         redirectByRole(currentRole);
@@ -451,28 +495,52 @@
         const visaKey = 'portland_visa1_accepted_' + currentUser.Email;
         
         // 1. Verificar si está en memoria local (rápido)
-        let hasAcceptedZarpe = localStorage.getItem(visaKey);
+        let hasAcceptedZarpe = !!localStorage.getItem(visaKey);
         
         // 2. Verificar en el CSV (fuente estática offline)
         if (!hasAcceptedZarpe && currentUser['Visa de Zarpe'] === 'Si') {
             hasAcceptedZarpe = true;
         }
 
-        // 3. (NUEVO) Verificación dinámica al Webhook como respaldo robusto
+        // 3. Usar el resultado del pre-fetch del webhook (ya cacheado desde que se identificó el email)
         if (!hasAcceptedZarpe) {
-            try {
-                // Al presionar acceder, consultamos al Webhook en vivo
-                btnAccess.innerHTML = 'Consultando Registros...';
-                const wpUrl = `https://script.google.com/macros/s/AKfycbxcp3HlO-f4tK8h5pcQMaBPqecOAH-4UY2lfRcUkEl8oSQYTPqKyoHWm5ksop3EMRKKmQ/exec?email=${encodeURIComponent(currentUser.Email)}`;
-                const response = await fetch(wpUrl);
-                const data = await response.json();
-                
-                if (data && data.visaZarpe === true) {
-                    hasAcceptedZarpe = true;
-                    localStorage.setItem(visaKey, 'true'); // Guardar para no tener que consultarlo en el futuro
+            if (webhookVisaCache === true) {
+                // El webhook ya respondió afirmativamente antes del clic
+                hasAcceptedZarpe = true;
+            } else if (webhookVisaCache === null && !webhookFetchInProgress) {
+                // El webhook aún no ha respondido o no estaba en progreso: consultamos ahora
+                try {
+                    btnAccess.textContent = 'Consultando registros...';
+                    btnAccess.classList.remove('active');
+                    const response = await fetch(`${WEBHOOK_URL}?email=${encodeURIComponent(currentUser.Email)}`);
+                    const data = await response.json();
+                    if (data && data.visaZarpe === true) {
+                        hasAcceptedZarpe = true;
+                        localStorage.setItem(visaKey, 'true');
+                    }
+                } catch (err) {
+                    console.log('Webhook no disponible al momento del acceso:', err);
+                } finally {
+                    btnAccess.textContent = 'Iniciar Travesía';
+                    btnAccess.classList.add('active');
                 }
-            } catch (err) {
-                console.log("El webhook no respondió o aún no tiene implementado el método doGet para lecturas.", err);
+            } else if (webhookFetchInProgress) {
+                // El pre-fetch está en progreso: esperamos a que termine (máx 4 segundos)
+                btnAccess.textContent = 'Verificando registros...';
+                btnAccess.classList.remove('active');
+                await new Promise(resolve => {
+                    let waited = 0;
+                    const interval = setInterval(() => {
+                        waited += 200;
+                        if (!webhookFetchInProgress || waited >= 4000) {
+                            clearInterval(interval);
+                            resolve();
+                        }
+                    }, 200);
+                });
+                if (webhookVisaCache === true) hasAcceptedZarpe = true;
+                btnAccess.textContent = 'Iniciar Travesía';
+                btnAccess.classList.add('active');
             }
         }
         
