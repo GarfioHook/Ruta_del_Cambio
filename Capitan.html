@@ -466,6 +466,13 @@
         if (!user) return;
 
         const allData = await Core.loadAppData();
+        
+        // Sincronizar el objeto de usuario local con los datos frescos (incluyendo el parche local de la visa)
+        const freshUser = allData.find(u => u.Email.toLowerCase() === user.Email.toLowerCase());
+        if (freshUser) {
+            Object.assign(user, freshUser);
+        }
+        
         const captainEmail = user.Email;
         
         // 1. Filtrar tripulación por email del capitán

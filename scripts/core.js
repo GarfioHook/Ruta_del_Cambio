@@ -66,6 +66,17 @@ async function loadAppData() {
                 user['Visa de Zarpe'] = 'Si';
             }
         });
+
+        // REFRESCAR SESIÓN: Si hay un usuario logueado, actualizamos su objeto en localStorage 
+        // con los datos frescos (incluyendo el parche de la visa que acabamos de aplicar arriba)
+        const sessionUserStr = localStorage.getItem('portland_user');
+        if (sessionUserStr) {
+            const sessionUser = JSON.parse(sessionUserStr);
+            const freshUser = data.find(u => u.Email.toLowerCase() === sessionUser.Email.toLowerCase());
+            if (freshUser) {
+                localStorage.setItem('portland_user', JSON.stringify(freshUser));
+            }
+        }
         
         return data;
     } catch (error) {

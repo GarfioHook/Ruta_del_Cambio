@@ -485,6 +485,10 @@
             // Save local persistance vinculada al mail del usuario
             localStorage.setItem('portland_visa1_accepted_' + user.Email, 'true');
             
+            // ACTUALIZAR SESIÓN INMEDIATAMENTE
+            user['Visa de Zarpe'] = 'Si';
+            Core.saveSession(user, role);
+            
             // Redirect smoothly to dashboard
             setTimeout(() => {
                 const dest = role === 'Capitan' ? 'Capitan.html' : (role === 'Almirante' ? 'Almirante.html' : 'Tripulante.html');
