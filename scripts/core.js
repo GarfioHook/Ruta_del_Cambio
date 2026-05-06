@@ -54,14 +54,21 @@ function getFlag(country) {
  */
 async function loadAppData() {
     try {
-        const response = await fetch(CSV_PATH);
+        const response = await fetch(CSV_PATH + '?t=' + Date.now());
         if (!response.ok) throw new Error('No se pudo cargar el archivo de datos.');
         const csvText = await response.text();
         const data = parseCSV(csvText);
         
-        // Sincronizar memoria local con los datos cargados para la sesión actual
-        // Para que las insignias se pinten de inmediato, aunque el CSV offline aún diga "No"
+        // Normalizar estados de visa y sincronizar memoria local
+        const visas = ['Visa de Zarpe', 'Visa de Navegacion', 'Visa de Aduanas', 'Visa de Descarga', 'Visa de Transito'];
         data.forEach(user => {
+            // Normalizar a "Si" si viene como "SI", "si", "Si" en el CSV
+            visas.forEach(visa => {
+                if (user[visa] && user[visa].toLowerCase() === 'si') {
+                    user[visa] = 'Si';
+                }
+            });
+
             if (localStorage.getItem('portland_visa1_accepted_' + user.Email)) {
                 user['Visa de Zarpe'] = 'Si';
             }
@@ -140,22 +147,32 @@ function logout() {
 /**
  * Guarda el perfil personalizado (Alias y Avatar).
  */
-function saveProfile(alias, avatar) {
-    const userStr = localStorage.getItem('portland_user');
-    const user = userStr ? JSON.parse(userStr) : null;
-    const suffix = user ? ('_' + user.Email) : '';
+function saveProfile(alias, avatar, email = null) {
+    let suffix = '';
+    if (email) {
+        suffix = '_' + email.toLowerCase().trim();
+    } else {
+        const userStr = localStorage.getItem('portland_user');
+        const user = userStr ? JSON.parse(userStr) : null;
+        suffix = user ? ('_' + user.Email.toLowerCase().trim()) : '';
+    }
     
-    localStorage.setItem('portland_aliasUsuario' + suffix, alias);
-    localStorage.setItem('portland_avatarUsuario' + suffix, avatar);
+    if (alias) localStorage.setItem('portland_aliasUsuario' + suffix, alias);
+    if (avatar) localStorage.setItem('portland_avatarUsuario' + suffix, avatar);
 }
 
 /**
  * Recupera el perfil personalizado.
  */
-function getProfile() {
-    const userStr = localStorage.getItem('portland_user');
-    const user = userStr ? JSON.parse(userStr) : null;
-    const suffix = user ? ('_' + user.Email) : '';
+function getProfile(email = null) {
+    let suffix = '';
+    if (email) {
+        suffix = '_' + email.toLowerCase().trim();
+    } else {
+        const userStr = localStorage.getItem('portland_user');
+        const user = userStr ? JSON.parse(userStr) : null;
+        suffix = user ? ('_' + user.Email.toLowerCase().trim()) : '';
+    }
 
     let alias = localStorage.getItem('portland_aliasUsuario' + suffix);
     let avatar = localStorage.getItem('portland_avatarUsuario' + suffix);
