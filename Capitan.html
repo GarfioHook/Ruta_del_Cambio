@@ -571,7 +571,8 @@
 
         // 4. Generar Tabla Grid
         const table = document.getElementById('crewTableGrid');
-        if (table && myCrew.length > 0) {
+        const displayList = [user, ...myCrew];
+        if (table && displayList.length > 0) {
             
             // Generar Headers
             let headerHtml = `<div class="cell header-cell header-gray">TRIPULANTE</div>`;
@@ -582,13 +583,29 @@
             let rowsHtml = headerHtml;
             
             // Generar Filas por Tripulante
-            myCrew.forEach(member => {
+            displayList.forEach(member => {
+                let isCaptainSelf = (member.Email === user.Email);
+                let badgeOrAvatarHtml = `<div class="crew-avatar"><span style="color:var(--silver); font-size:18px;">⚓</span></div>`;
+                
+                if (isCaptainSelf) {
+                    if (profile.avatarUsuario && (profile.avatarUsuario.includes('.webp') || profile.avatarUsuario.includes('.png') || profile.avatarUsuario.includes('.jpg'))) {
+                        badgeOrAvatarHtml = `<div class="crew-avatar"><img src="${profile.avatarUsuario}"></div>`;
+                    } else if (profile.avatarUsuario) {
+                        badgeOrAvatarHtml = `<div class="crew-avatar"><span style="font-size:20px;">${profile.avatarUsuario}</span></div>`;
+                    }
+                }
+                
+                let displayNameText = Core.formatName(member);
+                if (isCaptainSelf) {
+                    displayNameText += " (Tú)";
+                }
+
                 rowsHtml += `
-                    <div class="cell crew-cell">
-                        <div class="crew-avatar"><span style="color:var(--silver); font-size:18px;">⚓</span></div>
+                    <div class="cell crew-cell" ${isCaptainSelf ? 'style="border-left: 4px solid var(--gold-primary);"' : ''}>
+                        ${badgeOrAvatarHtml}
                         <div class="crew-info">
-                            <span class="crew-name">${Core.formatName(member)}</span>
-                            <span class="crew-role">DNI: ${member['ID Tripulante']}</span>
+                            <span class="crew-name">${displayNameText}</span>
+                            <span class="crew-role">${isCaptainSelf ? 'CAPITÁN' : ('DNI: ' + (member['ID Tripulante'] || ''))}</span>
                         </div>
                     </div>
                 `;
@@ -610,7 +627,7 @@
                     }
                     
                     rowsHtml += `
-                        <div class="cell visa-cell">
+                        <div class="cell visa-cell" ${isCaptainSelf ? 'style="background: rgba(197, 160, 89, 0.1);"' : ''}>
                             ${isDone 
                                 ? `<img src="${visa.imgActiva}" class="badge-img" alt="Insignia Completada">
                                    <div class="prog-container"><div class="prog-bar"><div class="prog-fill-gold" style="width:${pct}%"></div></div><span class="prog-text t-gold">${pct}%</span></div>`
