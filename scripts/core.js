@@ -235,7 +235,14 @@ function getLatestAchievements(allData, filterCaptainEmail = null) {
         };
 
         visas.forEach(visa => {
-            if (user[visa] === 'Si') {
+            const val = user[visa];
+            let isDone = false;
+            if (val === 'Si' || val === 'SI' || val === 'si') {
+                isDone = true;
+            } else if (!isNaN(parseInt(val)) && parseInt(val) >= 100) {
+                isDone = true;
+            }
+            if (isDone) {
                 const dateKey = `Fecha ${visa}`;
                 achievements.push({
                     name: formatName(user),
@@ -257,12 +264,20 @@ function getLatestAchievements(allData, filterCaptainEmail = null) {
  */
 function calculateProgressPercent(users, visas) {
     if (!users || users.length === 0) return 0;
-    let totalDone = 0;
-    let totalPossible = users.length * visas.length;
+    let totalProgress = 0;
+    let totalPossible = users.length * visas.length * 100;
     users.forEach(u => {
-        visas.forEach(v => { if(u[v] === 'Si') totalDone++; });
+        visas.forEach(v => {
+            let val = u[v];
+            if (val === 'Si' || val === 'SI' || val === 'si') {
+                totalProgress += 100;
+            } else if (!isNaN(parseInt(val))) {
+                let pct = parseInt(val);
+                totalProgress += pct > 100 ? 100 : pct;
+            }
+        });
     });
-    return totalPossible ? Math.round((totalDone / totalPossible) * 100) : 0;
+    return totalPossible ? Math.round((totalProgress / totalPossible) * 100) : 0;
 }
 
 /**

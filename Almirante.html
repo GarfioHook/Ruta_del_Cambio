@@ -609,8 +609,25 @@
                 `;
 
                 visasData.forEach(visa => {
-                    const completed = subCrew.filter(u => u[visa.key] === 'Si').length;
-                    const percent = subCrew.length > 0 ? Math.round((completed / subCrew.length) * 100) : 0;
+                    let completed = 0;
+                    let totalPct = 0;
+                    subCrew.forEach(u => {
+                        let val = u[visa.key];
+                        let pct = 0;
+                        if (val === 'Si' || val === 'SI' || val === 'si') {
+                            pct = 100;
+                            completed++;
+                        } else if (!isNaN(parseInt(val))) {
+                            pct = parseInt(val);
+                            if (pct >= 100) {
+                                pct = 100;
+                                completed++;
+                            }
+                        }
+                        totalPct += pct;
+                    });
+                    
+                    const percent = subCrew.length > 0 ? Math.round(totalPct / subCrew.length) : 0;
                     
                     const isDoneAny = completed > 0;
                     const imgSrc = isDoneAny ? visa.imgActiva : visa.imgBloqueada;

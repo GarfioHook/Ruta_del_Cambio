@@ -594,14 +594,28 @@
                 `;
                 
                 visasData.forEach(visa => {
-                    const isDone = member[visa.key] === 'Si';
+                    let val = member[visa.key];
+                    let pct = 0;
+                    let isDone = false;
+                    
+                    if (val === 'Si' || val === 'SI' || val === 'si') {
+                        pct = 100;
+                        isDone = true;
+                    } else if (!isNaN(parseInt(val))) {
+                        pct = parseInt(val);
+                        if (pct >= 100) {
+                            pct = 100;
+                            isDone = true;
+                        }
+                    }
+                    
                     rowsHtml += `
                         <div class="cell visa-cell">
                             ${isDone 
                                 ? `<img src="${visa.imgActiva}" class="badge-img" alt="Insignia Completada">
-                                   <div class="prog-container"><div class="prog-bar"><div class="prog-fill-gold" style="width:100%"></div></div><span class="prog-text t-gold">100%</span></div>`
+                                   <div class="prog-container"><div class="prog-bar"><div class="prog-fill-gold" style="width:${pct}%"></div></div><span class="prog-text t-gold">${pct}%</span></div>`
                                 : `<img src="${visa.imgBloqueada}" class="badge-img badge-locked" alt="Insignia Bloqueada">
-                                   <div class="prog-container"><div class="prog-bar"></div><span class="prog-text">0%</span></div>`
+                                   <div class="prog-container"><div class="prog-bar"><div class="prog-fill-gold" style="width:${pct}%"></div></div><span class="prog-text">${pct}%</span></div>`
                             }
                         </div>
                     `;

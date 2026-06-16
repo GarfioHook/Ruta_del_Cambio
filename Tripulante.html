@@ -245,6 +245,10 @@
         
         .badge-label { font-size: 11px; font-weight: 800; color: var(--navy-dark); line-height: 1.1; }
         .badge-sub { font-size: 9px; font-weight: 700; color: var(--text-gray); margin-top: 3px;}
+        .badge-prog-container { display:flex; align-items:center; gap:3px; justify-content:center; margin-top:5px; }
+        .badge-prog-bar { width:40px; height:4px; background:#E2E8ED; border-radius:2px; border:1px solid var(--silver); overflow:hidden; }
+        .badge-prog-fill { height:100%; background:linear-gradient(90deg, var(--gold-light), var(--gold-primary)); transition: width 0.5s; }
+        .badge-prog-text { font-size:8px; font-weight:900; color:var(--text-gray); }
 
         /* --- MAPA CENTRAL --- */
         .map-area {
@@ -445,6 +449,7 @@
                 </div>
                 <div class="badge-label">Argonauta</div>
                 <div class="badge-sub">La Profecía</div>
+                <div class="badge-prog-container"><div class="badge-prog-bar"><div class="badge-prog-fill" id="prog_badge1" style="width:0%;"></div></div><span class="badge-prog-text" id="pct_badge1">0%</span></div>
             </div>
             
             <div class="badge-slot">
@@ -453,6 +458,7 @@
                 </div>
                 <div class="badge-label">Navegante</div>
                 <div class="badge-sub">Salida de Troya</div>
+                <div class="badge-prog-container"><div class="badge-prog-bar"><div class="badge-prog-fill" id="prog_badge2" style="width:0%;"></div></div><span class="badge-prog-text" id="pct_badge2">0%</span></div>
             </div>
             
             <div class="badge-slot">
@@ -461,6 +467,7 @@
                 </div>
                 <div class="badge-label">Estratega</div>
                 <div class="badge-sub">La Cueva y la Isla</div>
+                <div class="badge-prog-container"><div class="badge-prog-bar"><div class="badge-prog-fill" id="prog_badge3" style="width:0%;"></div></div><span class="badge-prog-text" id="pct_badge3">0%</span></div>
             </div>
             
             <div class="badge-slot">
@@ -469,6 +476,7 @@
                 </div>
                 <div class="badge-label">Timonel</div>
                 <div class="badge-sub">Estrecho de Sirenas</div>
+                <div class="badge-prog-container"><div class="badge-prog-bar"><div class="badge-prog-fill" id="prog_badge4" style="width:0%;"></div></div><span class="badge-prog-text" id="pct_badge4">0%</span></div>
             </div>
             
             <div class="badge-slot">
@@ -477,6 +485,7 @@
                 </div>
                 <div class="badge-label">Insignia Ulises</div>
                 <div class="badge-sub">Destino: Ítaca</div>
+                <div class="badge-prog-container"><div class="badge-prog-bar"><div class="badge-prog-fill" id="prog_badge5" style="width:0%;"></div></div><span class="badge-prog-text" id="pct_badge5">0%</span></div>
             </div>
 
         </div>
@@ -487,7 +496,7 @@
         <div class="challenge-box">
             <div class="ch-title">Próximo Rumbo</div>
             <div class="ch-desc" id="nextChallengeText">Capacitación Introductoria en UBITS</div>
-            <button class="btn-action">Ir al Módulo de Entrenamiento</button>
+            <button class="btn-action" id="nextChallengeBtn">Ir al Módulo de Entrenamiento</button>
         </div>
     </div>
 
@@ -619,8 +628,31 @@
         visasData.forEach((visa) => {
             const badgeImg = document.getElementById(visa.id);
             const mapPin = document.getElementById(visa.mapPin);
+            const progBar = document.getElementById('prog_' + visa.id);
+            const progPct = document.getElementById('pct_' + visa.id);
             
-            if (user[visa.key] === 'Si') {
+            let val = user[visa.key];
+            let pct = 0;
+            let isDone = false;
+            
+            if (val === 'Si' || val === 'SI' || val === 'si') {
+                pct = 100;
+                isDone = true;
+            } else if (!isNaN(parseInt(val))) {
+                pct = parseInt(val);
+                if (pct >= 100) {
+                    pct = 100;
+                    isDone = true;
+                }
+            }
+            
+            if (progBar) progBar.style.width = pct + '%';
+            if (progPct) {
+                progPct.textContent = pct + '%';
+                if (pct === 100) progPct.style.color = 'var(--gold-primary)';
+            }
+
+            if (isDone) {
                 if(badgeImg) badgeImg.src = visa.imgActiva;
                 if(mapPin) {
                     mapPin.style.opacity = '1';
@@ -670,6 +702,22 @@
             "¡Has llegado a Ítaca! Preparados para el Go-Live."
         ];
         document.getElementById('nextChallengeText').innerText = challenges[completedCount] || challenges[5];
+
+        // Lógica del botón de desafío
+        const btnNextChallenge = document.getElementById('nextChallengeBtn');
+        if (btnNextChallenge) {
+            if (completedCount < 2) {
+                btnNextChallenge.innerText = "Ir al Módulo de Entrenamiento";
+                btnNextChallenge.onclick = () => window.open('https://login.ubitslearning.com/', '_blank');
+                btnNextChallenge.style.cursor = 'pointer';
+                btnNextChallenge.style.opacity = '1';
+            } else {
+                btnNextChallenge.innerText = "Pronto un nuevo desafío";
+                btnNextChallenge.onclick = () => {};
+                btnNextChallenge.style.cursor = 'default';
+                btnNextChallenge.style.opacity = '0.7';
+            }
+        }
 
 
         // 3. Progreso de la Misión (Barras Doradas)
