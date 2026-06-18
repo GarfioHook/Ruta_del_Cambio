@@ -207,7 +207,17 @@
         /* Celdas de Capitán (Izquierda) */
         .crew-cell {
             background: var(--cell-crew-bg); flex-direction: row; justify-content: flex-start; align-items: center; gap: 15px; padding-left: 15px;
+            cursor: pointer; transition: background 0.2s, box-shadow 0.2s;
         }
+        .crew-cell:hover {
+            background: rgba(197, 160, 89, 0.12);
+            box-shadow: inset 0 0 0 2px var(--gold-primary);
+        }
+        .crew-cell .click-hint {
+            position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+            font-size: 14px; color: var(--gold-primary); opacity: 0; transition: opacity 0.2s;
+        }
+        .crew-cell:hover .click-hint { opacity: 1; }
         .crew-avatar {
             width: 45px; height: 45px; background: #fff; border-radius: 50%;
             display: flex; justify-content: center; align-items: center; font-size: 20px;
@@ -585,26 +595,41 @@
 
             let rowsHtml = headerHtml;
             
-            directReports.forEach(report => {
-                // Cálculo de sub-tripulación para este reporte
+            // Calcular avance de cada equipo para poder ordenarlos
+            const reportsWithProgress = directReports.map(report => {
+                // Mejora 1: incluir al capitán/responsable en su propio equipo
                 let subCrew = [];
                 if (report['Rango'] === 'Tripulante') {
                     subCrew = [report];
                 } else {
-                    subCrew = Core.getTransitiveSubordinates(report.Email, allData);
+                    const subordinates = Core.getTransitiveSubordinates(report.Email, allData);
+                    subCrew = [report, ...subordinates]; // El capitán cuenta también
                 }
+                const teamPercent = Core.calculateProgressPercent(subCrew, visaKeys);
+                return { report, subCrew, teamPercent };
+            });
+
+            // Mejora 2: ordenar por avance descendente
+            reportsWithProgress.sort((a, b) => b.teamPercent - a.teamPercent);
+
+            reportsWithProgress.forEach(({ report, subCrew, teamPercent }) => {
+                const isClickable = report['Rango'] !== 'Tripulante';
+                const clickAttr = isClickable
+                    ? `onclick="window.location.href='Capitan.html?viewAs=${encodeURIComponent(report.Email)}'" title="Ver detalle de ${Core.formatName(report)}"`
+                    : '';
 
                 rowsHtml += `
-                    <div class="cell crew-cell">
+                    <div class="cell crew-cell" ${clickAttr}>
                         <div class="crew-avatar"><span style="color:var(--silver); font-size:18px;">${report['Rango'] === 'Tripulante' ? '🧔' : '⚓'}</span></div>
                         <div class="crew-info">
                             <span class="crew-name">${Core.formatName(report)}</span>
                             <span class="crew-role">${report['Rango']}</span>
                         </div>
+                        ${isClickable ? '<span class="click-hint">▶</span>' : ''}
                     </div>
                     <div class="cell trip-cell">
                         <div class="trip-number-box"><span class="trip-icon">👥</span> ${subCrew.length}</div>
-                        <div class="trip-label">${subCrew.length === 1 ? 'Tripulante' : 'Marineros'}</div>
+                        <div class="trip-label">${subCrew.length === 1 ? 'Integrante' : 'Integrantes'}</div>
                     </div>
                 `;
 
@@ -649,7 +674,6 @@
                     `;
                 });
 
-                const teamPercent = Core.calculateProgressPercent(subCrew, visaKeys);
                 rowsHtml += `
                     <div class="cell resumen-cell">
                         <div class="summary-prog-row">

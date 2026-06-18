@@ -53,6 +53,39 @@
             background-size: 100% 100%; pointer-events: none; z-index: 1;
         }
 
+        /* --- BANNER MODO VISTA-ALMIRANTE --- */
+        /* position:fixed lo saca del flujo flex del body, evitando el desplazamiento horizontal */
+        .admiral-view-banner {
+            display: none;
+            position: fixed; top: 0; left: 0; right: 0;
+            background: linear-gradient(90deg, var(--navy-dark), var(--navy-light));
+            color: var(--gold-light); font-size: 13px; font-weight: 900;
+            padding: 8px 20px; letter-spacing: 0.5px; z-index: 200;
+            align-items: center; gap: 10px;
+            border-bottom: 2px solid var(--gold-primary);
+        }
+        .admiral-view-banner.active { display: flex; }
+        /* 3-zonas: spacer | texto centrado | botón a la derecha */
+        .admiral-banner-spacer { flex: 1; }
+        .admiral-banner-text {
+            flex: 0 1 auto; text-align: center;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .admiral-banner-right { flex: 1; display: flex; justify-content: flex-end; }
+        .admiral-back-btn {
+            background: var(--gold-primary); color: var(--navy-dark); border: none;
+            padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 900;
+            cursor: pointer; font-family: 'Lato', sans-serif; letter-spacing: 0.5px;
+            white-space: nowrap; transition: background 0.2s;
+        }
+        .admiral-back-btn:hover { background: var(--gold-light); }
+        /* Compensar el alto del banner para que el header no quede tapado */
+        body.has-admiral-banner { padding-top: 38px; }
+        @media (max-width: 600px) {
+            .admiral-banner-spacer { display: none; }
+            .admiral-banner-text { font-size: 11px; }
+        }
+
         /* --- CABECERA SUPERIOR --- */
         header {
             position: sticky; top: 0; left: 0; width: 100%; height: auto; min-height: 70px;
@@ -337,6 +370,14 @@
 </head>
 <body>
 
+<div class="admiral-view-banner" id="admiralBanner">
+    <div class="admiral-banner-spacer"></div>
+    <span class="admiral-banner-text" id="bannerText">🛥️ MODO ALMIRANTE — Viendo panel de:</span>
+    <div class="admiral-banner-right">
+        <button class="admiral-back-btn" onclick="history.back()">&#8592; Volver al Almirantazgo</button>
+    </div>
+</div>
+
 <div class="game-container">
 
     <!-- Marco Decorativo -->
@@ -467,13 +508,37 @@
 
         const allData = await Core.loadAppData();
         
-        // Sincronizar el objeto de usuario local con los datos frescos (incluyendo el parche local de la visa)
+        // Sincronizar el objeto de usuario local con los datos frescos
         const freshUser = allData.find(u => u.Email.toLowerCase() === user.Email.toLowerCase());
         if (freshUser) {
             Object.assign(user, freshUser);
         }
-        
-        const captainEmail = user.Email;
+
+        // --- MODO VISTA DEL ALMIRANTE ---
+        // Si viene el parámetro ?viewAs=email, el Almirante está viendo el panel de ese capitán
+        const urlParams = new URLSearchParams(window.location.search);
+        const viewAsEmail = urlParams.get('viewAs');
+        let captainUser = user; // por defecto, el usuario logueado
+
+        if (viewAsEmail) {
+            const targetCaptain = allData.find(u => u.Email.toLowerCase() === viewAsEmail.toLowerCase());
+            if (targetCaptain) {
+                captainUser = targetCaptain;
+                // Mostrar banner de modo almirante
+                const banner = document.getElementById('admiralBanner');
+                const bannerText = document.getElementById('bannerText');
+                if (banner) {
+                    banner.classList.add('active');
+                    document.body.classList.add('has-admiral-banner');
+                    if (bannerText) bannerText.textContent = `🛥️ MODO ALMIRANTE — Viendo panel de: ${Core.formatName(captainUser)}`;
+                }
+                // Actualizar título del header para reflejar a quién se está viendo
+                const mainTitle = document.querySelector('.main-title');
+                if (mainTitle) mainTitle.textContent = `EQUIPO DE ${Core.formatName(captainUser).split(' ')[0].toUpperCase()}`;
+            }
+        }
+
+        const captainEmail = captainUser.Email;
         
         // 1. Filtrar tripulación por email del capitán (cálculo transitivo para que coincida con el Almirante)
         const myCrew = Core.getTransitiveSubordinates(captainEmail, allData);
@@ -546,8 +611,10 @@
         };
         
         // 3. Actualizar Stats del Sidebar
+        // Mejora 1: el capitán también cuenta en su propio equipo
+        const fullTeam = [captainUser, ...myCrew];
         const tripNum = document.getElementById('crewCountDisplay');
-        if (tripNum) tripNum.innerText = myCrew.length;
+        if (tripNum) tripNum.innerText = fullTeam.length;
         
         const visasData = [
             { key: 'Visa de Zarpe', imgActiva: 'img/Badge_1_Activo.png', imgBloqueada: 'img/Badge_1_InActivo.png', name: 'HITO 1: ARGONAUTA<br><span style="font-size:9px; color:var(--text-gray);">(Compromiso)</span>' },
@@ -558,7 +625,8 @@
         ];
         
         const visaKeys = visasData.map(v => v.key);
-        const teamPercent = Core.calculateProgressPercent(myCrew, visaKeys);
+        // Mejora 1: incluir al capitán en el cálculo de avance del equipo
+        const teamPercent = Core.calculateProgressPercent(fullTeam, visaKeys);
         
         const progFill = document.getElementById('teamProgressFill');
         const progText = document.getElementById('teamProgressText');
@@ -571,7 +639,7 @@
 
         // 4. Generar Tabla Grid
         const table = document.getElementById('crewTableGrid');
-        const displayList = [user, ...myCrew];
+        const displayList = [captainUser, ...myCrew]; // El capitán aparece primero en la tabla
         if (table && displayList.length > 0) {
             
             // Generar Headers
@@ -584,7 +652,7 @@
             
             // Generar Filas por Tripulante
             displayList.forEach(member => {
-                let isCaptainSelf = (member.Email === user.Email);
+                let isCaptainSelf = (member.Email.toLowerCase() === captainUser.Email.toLowerCase());
                 let badgeOrAvatarHtml = `<div class="crew-avatar"><span style="color:var(--silver); font-size:18px;">⚓</span></div>`;
                 
                 if (isCaptainSelf) {
@@ -596,8 +664,11 @@
                 }
                 
                 let displayNameText = Core.formatName(member);
-                if (isCaptainSelf) {
+                // Mostrar "(Tú)" solo si el que navega es el mismo capitán (no el almirante en modo vista)
+                if (isCaptainSelf && !viewAsEmail) {
                     displayNameText += " (Tú)";
+                } else if (isCaptainSelf && viewAsEmail) {
+                    displayNameText += " (Capitán)";
                 }
 
                 rowsHtml += `
