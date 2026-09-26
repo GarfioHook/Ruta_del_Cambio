@@ -171,33 +171,40 @@ function saveSession(user, role) {
 function logout() {
     localStorage.removeItem('portland_user');
     localStorage.removeItem('portland_role');
-    // Nota: El alias y avatar persisten aunque se cierre sesión, 
-    // a menos que se quiera un reset total.
+    // Eliminar también claves globales heredadas
+    localStorage.removeItem('portland_aliasUsuario');
+    localStorage.removeItem('portland_avatarUsuario');
     window.location.href = 'index.html';
 }
 
 /**
- * Guarda el perfil personalizado (Alias y Avatar).
+ * Guarda el perfil personalizado (Alias y Avatar) vinculado estrictamente al email del tripulante.
  */
 function saveProfile(alias, avatar, email = null) {
-    let suffix = '';
     let targetEmail = email ? email.toLowerCase().trim() : null;
-    if (email) {
-        suffix = '_' + targetEmail;
-    } else {
+    if (!targetEmail) {
         const userStr = localStorage.getItem('portland_user');
         const user = userStr ? JSON.parse(userStr) : null;
         if (user && user.Email) {
             targetEmail = user.Email.toLowerCase().trim();
-            suffix = '_' + targetEmail;
         }
     }
     
-    if (alias) localStorage.setItem('portland_aliasUsuario' + suffix, alias);
-    if (avatar) localStorage.setItem('portland_avatarUsuario' + suffix, avatar);
+    // NUNCA guardar si no hay email asociado al usuario actual
+    if (!targetEmail) return;
 
-    // Sincronizar en segundo plano con la hoja Usuarios en el backend
-    if (alias && targetEmail && typeof PORTLAND_WEBHOOK_URL !== 'undefined' && PORTLAND_WEBHOOK_URL) {
+    const suffix = '_' + targetEmail;
+    const cleanAlias = (alias !== null && alias !== undefined) ? alias.toString().trim() : '';
+    
+    if (cleanAlias) {
+        localStorage.setItem('portland_aliasUsuario' + suffix, cleanAlias);
+    }
+    if (avatar) {
+        localStorage.setItem('portland_avatarUsuario' + suffix, avatar);
+    }
+
+    // Sincronizar en segundo plano con la hoja Usuarios en el backend solo si hay un alias real
+    if (cleanAlias && typeof PORTLAND_WEBHOOK_URL !== 'undefined' && PORTLAND_WEBHOOK_URL) {
         try {
             fetch(PORTLAND_WEBHOOK_URL, {
                 method: 'POST',
@@ -205,7 +212,7 @@ function saveProfile(alias, avatar, email = null) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     email: targetEmail,
-                    alias: alias,
+                    alias: cleanAlias,
                     avatar: avatar || '',
                     action: 'UPDATE_PROFILE'
                 })
@@ -215,47 +222,48 @@ function saveProfile(alias, avatar, email = null) {
 }
 
 /**
- * Recupera el perfil personalizado.
+ * Recupera el perfil personalizado estrictamente para el email solicitado o el usuario en sesión.
+ * Función pura: no escribe en localStorage ni dispara sincronizaciones secundarias.
  */
 function getProfile(email = null) {
-    let suffix = '';
     let targetEmail = email ? email.toLowerCase().trim() : null;
-    if (email) {
-        suffix = '_' + targetEmail;
-    } else {
+    if (!targetEmail) {
         const userStr = localStorage.getItem('portland_user');
         const user = userStr ? JSON.parse(userStr) : null;
         if (user && user.Email) {
             targetEmail = user.Email.toLowerCase().trim();
-            suffix = '_' + targetEmail;
         }
     }
 
-    let alias = localStorage.getItem('portland_aliasUsuario' + suffix);
+    if (!targetEmail) {
+        return {
+            aliasUsuario: '',
+            avatarUsuario: 'img/Avatar01.webp'
+        };
+    }
+
+    const suffix = '_' + targetEmail;
+    let alias = (localStorage.getItem('portland_aliasUsuario' + suffix) || '').trim();
     let avatar = localStorage.getItem('portland_avatarUsuario' + suffix);
     
-    // Si no está en localStorage, intentar recuperar del usuario en sesión
+    // Solo si el usuario en sesión activa coincide EXACTAMENTE con el email solicitado, recuperar su Alias
     if (!alias) {
         const userStr = localStorage.getItem('portland_user');
         const user = userStr ? JSON.parse(userStr) : null;
-        if (user && user.Alias) {
-            alias = user.Alias;
-            if (suffix) localStorage.setItem('portland_aliasUsuario' + suffix, alias);
+        if (user && user.Email && user.Email.toLowerCase().trim() === targetEmail && user.Alias) {
+            alias = user.Alias.trim();
         }
     }
 
     // Avatar por defecto náutico si no tiene uno asignado
     if (!avatar || (!avatar.includes('.webp') && !avatar.includes('.png') && !avatar.includes('.jpg'))) {
         avatar = 'img/Avatar01.webp';
-        if (suffix) localStorage.setItem('portland_avatarUsuario' + suffix, avatar);
     }
     
-    // Migración: Si el avatar contiene un avión (✈️), lo reemplazamos por uno náutico limpio.
+    // Migración de avatar antiguo
     if (avatar && avatar.includes('✈️')) {
         const role = localStorage.getItem('portland_role');
-        const newAvatar = (role === 'Capitan' || role === 'Almirante') ? 'img/Avatar03.webp' : 'img/Avatar01.webp';
-        if (suffix) localStorage.setItem('portland_avatarUsuario' + suffix, newAvatar);
-        avatar = newAvatar;
+        avatar = (role === 'Capitan' || role === 'Almirante') ? 'img/Avatar03.webp' : 'img/Avatar01.webp';
     }
 
     return {
