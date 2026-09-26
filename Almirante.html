@@ -572,8 +572,9 @@
             const isCaptain = window.location.pathname.includes('Capitan');
             let prefix = isAdmiral ? 'Almirante ' : (isCaptain ? 'Capitán ' : '');
             
-            if (profile.aliasUsuario) {
-                displayAlias.innerText = `¡Hola, ${profile.aliasUsuario}!`;
+            const effectiveAlias = profile.aliasUsuario || user.Alias;
+            if (effectiveAlias) {
+                displayAlias.innerText = `¡Hola, ${effectiveAlias}!`;
             } else {
                 displayAlias.innerText = `¡Hola, ${prefix}${Core.formatGreeting(user)}!`;
             }

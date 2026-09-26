@@ -181,16 +181,37 @@ function logout() {
  */
 function saveProfile(alias, avatar, email = null) {
     let suffix = '';
+    let targetEmail = email ? email.toLowerCase().trim() : null;
     if (email) {
-        suffix = '_' + email.toLowerCase().trim();
+        suffix = '_' + targetEmail;
     } else {
         const userStr = localStorage.getItem('portland_user');
         const user = userStr ? JSON.parse(userStr) : null;
-        suffix = user ? ('_' + user.Email.toLowerCase().trim()) : '';
+        if (user && user.Email) {
+            targetEmail = user.Email.toLowerCase().trim();
+            suffix = '_' + targetEmail;
+        }
     }
     
     if (alias) localStorage.setItem('portland_aliasUsuario' + suffix, alias);
     if (avatar) localStorage.setItem('portland_avatarUsuario' + suffix, avatar);
+
+    // Sincronizar en segundo plano con la hoja Usuarios en el backend
+    if (alias && targetEmail && typeof PORTLAND_WEBHOOK_URL !== 'undefined' && PORTLAND_WEBHOOK_URL) {
+        try {
+            fetch(PORTLAND_WEBHOOK_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: targetEmail,
+                    alias: alias,
+                    avatar: avatar || '',
+                    action: 'UPDATE_PROFILE'
+                })
+            }).catch(() => {});
+        } catch (e) {}
+    }
 }
 
 /**
@@ -198,28 +219,47 @@ function saveProfile(alias, avatar, email = null) {
  */
 function getProfile(email = null) {
     let suffix = '';
+    let targetEmail = email ? email.toLowerCase().trim() : null;
     if (email) {
-        suffix = '_' + email.toLowerCase().trim();
+        suffix = '_' + targetEmail;
     } else {
         const userStr = localStorage.getItem('portland_user');
         const user = userStr ? JSON.parse(userStr) : null;
-        suffix = user ? ('_' + user.Email.toLowerCase().trim()) : '';
+        if (user && user.Email) {
+            targetEmail = user.Email.toLowerCase().trim();
+            suffix = '_' + targetEmail;
+        }
     }
 
     let alias = localStorage.getItem('portland_aliasUsuario' + suffix);
     let avatar = localStorage.getItem('portland_avatarUsuario' + suffix);
     
+    // Si no está en localStorage, intentar recuperar del usuario en sesión
+    if (!alias) {
+        const userStr = localStorage.getItem('portland_user');
+        const user = userStr ? JSON.parse(userStr) : null;
+        if (user && user.Alias) {
+            alias = user.Alias;
+            if (suffix) localStorage.setItem('portland_aliasUsuario' + suffix, alias);
+        }
+    }
+
+    // Avatar por defecto náutico si no tiene uno asignado
+    if (!avatar || (!avatar.includes('.webp') && !avatar.includes('.png') && !avatar.includes('.jpg'))) {
+        avatar = 'img/Avatar01.webp';
+        if (suffix) localStorage.setItem('portland_avatarUsuario' + suffix, avatar);
+    }
+    
     // Migración: Si el avatar contiene un avión (✈️), lo reemplazamos por uno náutico limpio.
     if (avatar && avatar.includes('✈️')) {
         const role = localStorage.getItem('portland_role');
-        // Usamos Oficial (👮‍♂️) para cargos de mando o Marinero (🧔) para el resto
-        const newAvatar = (role === 'Capitan' || role === 'Almirante') ? '👮‍♂️' : '🧔';
-        localStorage.setItem('portland_avatarUsuario' + suffix, newAvatar);
+        const newAvatar = (role === 'Capitan' || role === 'Almirante') ? 'img/Avatar03.webp' : 'img/Avatar01.webp';
+        if (suffix) localStorage.setItem('portland_avatarUsuario' + suffix, newAvatar);
         avatar = newAvatar;
     }
 
     return {
-        aliasUsuario: alias,
+        aliasUsuario: alias || '',
         avatarUsuario: avatar
     };
 }

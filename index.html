@@ -444,14 +444,16 @@
                 currentRole = data.role || currentUser.Rango || 'Tripulante';
 
                 fichaName.textContent = Core.formatName(currentUser);
-                fichaRole.textContent = `${currentRole} - Rango: Oficial`;
 
-                // Guardar perfil recibido si existe
-                if (data.alias || data.avatar) {
-                    Core.saveProfile(data.alias, data.avatar, currentUser.Email);
+                // Alias prioritario desde backend o propiedad del usuario
+                const backendAlias = data.alias || currentUser.Alias || '';
+                const backendAvatar = data.avatar || '';
+
+                if (backendAlias || backendAvatar) {
+                    Core.saveProfile(backendAlias, backendAvatar, currentUser.Email);
                 }
 
-                if (data.hasVisa) {
+                if (data.hasVisa || (currentUser['Visa de Zarpe'] && currentUser['Visa de Zarpe'].toString().toLowerCase() === 'si')) {
                     webhookVisaCache = true;
                     localStorage.setItem('portland_visa1_accepted_' + currentUser.Email, 'true');
                 } else {
@@ -459,7 +461,15 @@
                 }
 
                 const profile = Core.getProfile(currentUser.Email);
-                updateFichaVisual(profile.aliasUsuario || data.alias, profile.avatarUsuario || data.avatar);
+                const displayAliasText = profile.aliasUsuario || backendAlias;
+
+                if (displayAliasText && currentRole) {
+                    fichaRole.textContent = `${currentRole} - "${displayAliasText}"`;
+                } else if (currentRole) {
+                    fichaRole.textContent = `${currentRole} - Rango: Oficial`;
+                }
+
+                updateFichaVisual(displayAliasText, profile.avatarUsuario);
 
                 btnAccess.classList.add('active');
                 btnAccess.textContent = 'Iniciar Travesía';
@@ -533,14 +543,32 @@
         if (currentUser && currentRole) {
             Core.saveSession(currentUser, currentRole);
             
-            const profile = Core.getProfile();
-            // Si el perfil se recuperó (vía Webhook o local), evitamos el panel de personalización
-            if (!profile.avatarUsuario || (!profile.avatarUsuario.includes('.webp') && !profile.avatarUsuario.includes('.png'))) {
-                document.getElementById('loginPanel').style.display = 'none';
-                document.getElementById('profilePanel').style.display = 'block';
-            } else {
+            const profile = Core.getProfile(currentUser.Email);
+            const userAlias = profile.aliasUsuario || currentUser.Alias || '';
+            const visaKey = 'portland_visa1_accepted_' + currentUser.Email;
+            const hasAcceptedZarpe = !!localStorage.getItem(visaKey) || 
+                                     (currentUser['Visa de Zarpe'] && currentUser['Visa de Zarpe'].toString().toLowerCase() === 'si') || 
+                                     webhookVisaCache === true;
+
+            // Si el tripulante ya aceptó la Visa de Zarpe O ya tiene su Alias registrado en la base de datos
+            if (hasAcceptedZarpe || userAlias) {
+                if (userAlias) {
+                    const avatarValido = (profile.avatarUsuario && (profile.avatarUsuario.includes('.webp') || profile.avatarUsuario.includes('.png')))
+                        ? profile.avatarUsuario
+                        : 'img/Avatar01.webp';
+                    Core.saveProfile(userAlias, avatarValido, currentUser.Email);
+                }
                 redirectByRole(currentRole);
+                return;
             }
+
+            // Solo si es un tripulante nuevo sin Alias ni TyC aceptados
+            const aliasInput = document.getElementById('aliasInput');
+            if (aliasInput) {
+                aliasInput.value = userAlias;
+            }
+            document.getElementById('loginPanel').style.display = 'none';
+            document.getElementById('profilePanel').style.display = 'block';
         }
     });
 
@@ -558,9 +586,9 @@
     document.getElementById('btnSaveProfile').addEventListener('click', () => {
         const alias = document.getElementById('aliasInput').value.trim();
         if (!alias) return alert('Por favor, ingresa un alias náutico.');
-        if (!selectedAvatarImg) return alert('Por favor, selecciona un retrato.');
+        const avatarToSave = selectedAvatarImg || 'img/Avatar01.webp';
 
-        Core.saveProfile(alias, selectedAvatarImg);
+        Core.saveProfile(alias, avatarToSave, currentUser ? currentUser.Email : null);
         
         redirectByRole(currentRole);
     });
@@ -568,8 +596,10 @@
     async function redirectByRole(role) {
         const visaKey = 'portland_visa1_accepted_' + currentUser.Email;
         
-        // 1. Verificar si está en memoria local o CSV (rápido)
-        let hasAcceptedZarpe = !!localStorage.getItem(visaKey) || currentUser['Visa de Zarpe'] === 'Si';
+        // 1. Verificar si está en memoria local o en los datos del usuario
+        let hasAcceptedZarpe = !!localStorage.getItem(visaKey) || 
+                               (currentUser['Visa de Zarpe'] && currentUser['Visa de Zarpe'].toString().toLowerCase() === 'si') ||
+                               webhookVisaCache === true;
         
         // 2. Si no está local, el Webhook ya debió responder (gracias a la espera en el botón de acceso)
         if (!hasAcceptedZarpe && webhookVisaCache === true) {
