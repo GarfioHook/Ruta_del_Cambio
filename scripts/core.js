@@ -313,15 +313,35 @@ function calculateProgressPercent(users, visas) {
 }
 
 /**
- * Calcula los días restantes para el Go-Live (30 de Septiembre de 2026).
+ * Calcula los días faltantes para el Próximo Destino según el calendario:
+ * 1. Hasta el 02 de Noviembre de 2026.
+ * 2. Después del 02 de Noviembre de 2026, cuenta hacia el 02 de Diciembre de 2026.
+ * 3. Después del 02 de Diciembre de 2026, cuenta hacia el 04 de Enero de 2027.
  */
 function getDaysToGoLive() {
-    const target = new Date('2026-09-30');
     const today = new Date();
-    const diff = target - today;
-    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+    // Normalizar a inicio del día (medianoche local)
+    const current = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+    const milestone1 = new Date(2026, 10, 2); // 02 de Noviembre de 2026
+    const milestone2 = new Date(2026, 11, 2); // 02 de Diciembre de 2026
+    const milestone3 = new Date(2027, 0, 4);  // 04 de Enero de 2027
+
+    let targetDate = milestone1;
+
+    if (current > milestone2) {
+        targetDate = milestone3;
+    } else if (current > milestone1) {
+        targetDate = milestone2;
+    }
+
+    const diffMs = targetDate - current;
+    const days = Math.round(diffMs / (1000 * 60 * 60 * 24));
     return days > 0 ? days : 0;
 }
+
+// Alias para claridad de propósito
+const getDaysToNextDestination = getDaysToGoLive;
 
 /**
  * Obtiene todos los subordinados de manera recursiva (transitiva).
@@ -631,6 +651,7 @@ window.Core = {
     getFlag,
     calculateProgressPercent,
     getDaysToGoLive,
+    getDaysToNextDestination,
     saveProfile,
     getProfile,
     getTransitiveSubordinates,

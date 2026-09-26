@@ -387,6 +387,32 @@
         .btn-special-action:hover { background: var(--gold-light); }
         .btn-special-action:disabled { opacity: 0.6; cursor: not-allowed; }
 
+        .btn-site-pruebas {
+            background: linear-gradient(135deg, var(--navy-dark), var(--navy-light));
+            color: var(--gold-light);
+            text-decoration: none;
+            padding: 7px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 800;
+            border: 1px solid var(--gold-primary);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 6px rgba(15, 32, 53, 0.2);
+            white-space: nowrap;
+            transition: all 0.2s ease;
+            font-family: 'Lato', sans-serif;
+            text-transform: uppercase;
+        }
+        .btn-site-pruebas:hover {
+            background: linear-gradient(135deg, var(--gold-primary), var(--gold-light));
+            color: var(--navy-dark);
+            border-color: var(--navy-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(197, 160, 89, 0.35);
+        }
+
         /* Form Controls en Modales */
         .modal-form-group {
             text-align: left; margin-bottom: 15px;
@@ -493,7 +519,7 @@
         <!-- Panel Días -->
         <div class="odyssey-panel widget-days">
             <div class="rivet r-tl"></div><div class="rivet r-tr"></div><div class="rivet r-bl"></div><div class="rivet r-br"></div>
-            <div class="w-title">DÍAS PARA LLEGAR A ÍTACA:</div>
+            <div class="w-title">DIAS PARA PROXIMO DESTINO:</div>
             <div class="w-value" id="goLiveVal">180</div>
         </div>
     </aside>
@@ -592,6 +618,21 @@
         <!-- VISTA 2: RUTA DE TESTER -->
         <div id="routeTesterView" style="display:none;">
             <div class="panel-title serif-text">Ruta de Especialista Tester</div>
+
+            <!-- Botón de Acceso al Sitio de Pruebas S/4HANA -->
+            <div style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; background:linear-gradient(135deg, rgba(27, 54, 93, 0.05), rgba(197, 160, 89, 0.15)); border:1.5px solid var(--gold-primary); border-radius:8px; padding:10px 12px; gap:8px;">
+                <div style="display:flex; align-items:center; gap:8px; text-align:left;">
+                    <span style="font-size:22px; flex-shrink:0;">📋</span>
+                    <div>
+                        <div style="font-size:12px; font-weight:800; color:var(--navy-dark); font-family:'Playfair Display', serif; line-height:1.2;">Sitio Oficial de Pruebas S/4HANA</div>
+                        <div style="font-size:9px; color:var(--text-gray); line-height:1.2;">Descarga los escenarios, guías y casos de prueba para tu ciclo</div>
+                    </div>
+                </div>
+                <a href="https://garfiohook.github.io/Pruebas_S4H/" target="_blank" rel="noopener noreferrer" class="btn-site-pruebas">
+                    <span>📥</span> Ir al Sitio de Pruebas <span style="font-size:12px;">↗</span>
+                </a>
+            </div>
+
             <div style="display:flex; justify-content:space-between; align-items:center; background:#fff; padding:8px 12px; border:1px solid var(--silver); border-radius:6px; margin-bottom:12px;">
                 <span style="font-size:11px; font-weight:800; color:var(--navy-dark);">DESAFÍOS TESTER COMPLETADOS:</span>
                 <div style="display:flex; align-items:center; gap:8px;">
@@ -620,7 +661,7 @@
                         <div class="special-card-title">Ciclo 1 de Pruebas</div>
                         <div class="special-card-status" id="statusTesterCycle1">Pendiente</div>
                     </div>
-                    <button class="btn-special-action" id="btnTesterCycle1">Enviar Planilla</button>
+                    <button class="btn-special-action" id="btnTesterCycle1">Enviar Certificado</button>
                 </div>
 
                 <!-- Desafío 3: Ciclo 2 de Pruebas -->
@@ -630,7 +671,7 @@
                         <div class="special-card-title">Ciclo 2 de Pruebas</div>
                         <div class="special-card-status" id="statusTesterCycle2">Pendiente</div>
                     </div>
-                    <button class="btn-special-action" id="btnTesterCycle2">Enviar Planilla</button>
+                    <button class="btn-special-action" id="btnTesterCycle2">Enviar Certificado</button>
                 </div>
 
                 <!-- Desafío 4: Ciclo 3 de Pruebas -->
@@ -640,7 +681,7 @@
                         <div class="special-card-title">Ciclo 3 de Pruebas</div>
                         <div class="special-card-status" id="statusTesterCycle3">Pendiente</div>
                     </div>
-                    <button class="btn-special-action" id="btnTesterCycle3">Enviar Planilla</button>
+                    <button class="btn-special-action" id="btnTesterCycle3">Enviar Certificado</button>
                 </div>
             </div>
         </div>
@@ -731,16 +772,16 @@
         </div>
     </div>
 
-    <!-- MODAL TESTER: SUBIR Y ENVIAR PLANILLA DE CICLO -->
+    <!-- MODAL TESTER: SUBIR Y ENVIAR CERTIFICADO DE CICLO -->
     <div class="profile-modal-overlay" id="testerUploadModal">
         <div class="profile-modal" style="max-width:550px;">
             <div class="rivet r-tl"></div><div class="rivet r-tr"></div><div class="rivet r-bl"></div><div class="rivet r-br"></div>
-            <h2 id="testerModalTitle">Entrega de Planilla de Pruebas</h2>
-            <p>La planilla se remitirá vía email a <strong>gsalinas@pjportland.cl</strong> con copia a tu correo y se registrará la fecha en <strong>Registro2</strong>.</p>
+            <h2 id="testerModalTitle">Entrega de Certificado de Pruebas</h2>
+            <p>El certificado se remitirá vía email a <strong>gsalinas@pjportland.cl</strong> con copia a tu correo y se registrará la fecha en <strong>Registro2</strong>.</p>
             
             <div class="modal-form-group">
-                <label>Planilla de Resultados (Excel .xlsx / .csv / .pdf):</label>
-                <input type="file" id="testerFileInput" class="modal-input" accept=".xlsx,.xls,.csv,.pdf">
+                <label>Certificado de Resultados (Excel .xlsx / .csv / .pdf / imagen):</label>
+                <input type="file" id="testerFileInput" class="modal-input" accept=".xlsx,.xls,.csv,.pdf,.png,.jpg,.jpeg">
                 <div class="file-upload-preview" id="testerFileNotice">Selecciona el archivo de tu equipo.</div>
             </div>
 
@@ -749,7 +790,7 @@
                 <textarea id="testerNotesInput" class="modal-textarea" rows="3" placeholder="Ej: 100% de casos ejecutados, 2 incidencias leves reportadas..."></textarea>
             </div>
 
-            <button class="btn-save-profile" id="btnSubmitTesterCycle">📤 Enviar Planilla por Correo y Registrar</button>
+            <button class="btn-save-profile" id="btnSubmitTesterCycle">📤 Enviar Certificado por Correo y Registrar</button>
             <p style="margin-top: 15px; cursor: pointer; color: var(--text-gray); font-weight: bold; font-size: 12px; text-transform: uppercase;" onclick="closeModal('testerUploadModal')">Cancelar</p>
         </div>
     </div>
@@ -1302,12 +1343,12 @@
                 cardCycle.classList.add('completed');
                 statusCycle.className = 'special-card-status done';
                 statusCycle.innerHTML = `✅ Entregado<br><span style="font-size:9px; color:var(--text-gray);">${cycleData.fecha}<br>${cycleData.fileName ? '📎 ' + cycleData.fileName : ''}</span>`;
-                btnCycle.innerText = 'Reenviar Planilla';
+                btnCycle.innerText = 'Reenviar Certificado';
             }
 
             btnCycle.onclick = () => {
                 currentTesterCycleNum = cycleNum;
-                document.getElementById('testerModalTitle').innerText = `Entrega de Planilla: Ciclo ${cycleNum} de Pruebas`;
+                document.getElementById('testerModalTitle').innerText = `Entrega de Certificado: Ciclo ${cycleNum} de Pruebas`;
                 document.getElementById('testerFileInput').value = '';
                 document.getElementById('testerNotesInput').value = '';
                 document.getElementById('testerUploadModal').style.display = 'flex';
@@ -1320,16 +1361,16 @@
             const fileInput = document.getElementById('testerFileInput');
             const file = fileInput.files[0];
             if (!file) {
-                return alert('Por favor, selecciona el archivo de la planilla antes de enviar.');
+                return alert('Por favor, selecciona el archivo del certificado antes de enviar.');
             }
             const notes = document.getElementById('testerNotesInput').value.trim();
 
             btnSubmitTester.disabled = true;
-            btnSubmitTester.innerText = '⏳ Enviando Planilla por Correo...';
+            btnSubmitTester.innerText = '⏳ Enviando Certificado por Correo...';
 
             try {
                 await Core.saveTesterCycle(user.Email, Core.formatName(user), currentTesterCycleNum, file, notes);
-                alert(`¡Planilla del Ciclo ${currentTesterCycleNum} enviada con éxito por correo a gsalinas@pjportland.cl y a ${user.Email}! Fecha registrada en Registro2.`);
+                alert(`¡Certificado del Ciclo ${currentTesterCycleNum} enviado con éxito por correo a gsalinas@pjportland.cl y a ${user.Email}! Fecha registrada en Registro2.`);
                 closeModal('testerUploadModal');
                 renderTesterView(user);
             } catch (err) {
@@ -1337,7 +1378,7 @@
                 alert('Ocurrió un error al procesar el archivo. Inténtalo nuevamente.');
             } finally {
                 btnSubmitTester.disabled = false;
-                btnSubmitTester.innerText = '📤 Enviar Planilla por Correo y Registrar';
+                btnSubmitTester.innerText = '📤 Enviar Certificado por Correo y Registrar';
             }
         };
     }
