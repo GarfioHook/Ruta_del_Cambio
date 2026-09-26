@@ -366,6 +366,32 @@
         }
         .btn-save-profile:active { transform: translateY(2px); }
 
+        /* Badges de Rol Especial */
+        .role-badge {
+            display: inline-block; padding: 2px 5px; border-radius: 4px;
+            font-size: 8px; font-weight: 900; margin-left: 4px; letter-spacing: 0.5px;
+            vertical-align: middle;
+        }
+        .badge-tester {
+            background: #E8F4FD; color: #1B365D; border: 1px solid #1B365D;
+        }
+        .badge-trainer {
+            background: #E8F8F0; color: #2E8B57; border: 1px solid #2E8B57;
+        }
+
+        /* Pestañas de Capitán */
+        .captain-tab-btn {
+            background: #E8E2D2; border: 1px solid var(--silver); border-radius: 6px;
+            padding: 7px 12px; font-size: 11px; font-weight: 900; color: var(--navy-dark);
+            cursor: pointer; transition: 0.2s; font-family: 'Lato', sans-serif; text-transform: uppercase;
+        }
+        .captain-tab-btn:hover { background: #fff; border-color: var(--gold-primary); }
+        .captain-tab-btn.active {
+            background: linear-gradient(180deg, var(--gold-light), var(--gold-primary));
+            color: var(--navy-dark); border-color: var(--navy-dark);
+            box-shadow: 0 2px 5px rgba(15,32,53,0.15);
+        }
+
     </style>
 </head>
 <body>
@@ -457,14 +483,37 @@
 
         </aside>
 
-        <!-- PANEL PRINCIPAL (Tabla Grid) -->
+        <!-- PANEL PRINCIPAL (Tabla Grid con Pestañas) -->
         <main class="odyssey-panel main-panel">
             <div class="rivet r-tl"></div><div class="rivet r-tr"></div><div class="rivet r-bl"></div><div class="rivet r-br"></div>
-            <div class="panel-title serif-text">Manifiesto de Progreso</div>
             
-            <div class="table-scroll-wrapper">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px; border-bottom:1px solid var(--silver); padding-bottom:10px;">
+                <div class="panel-title serif-text" style="margin:0; border:none; padding:0;">Manifiesto de Progreso</div>
+                <div style="display:flex; gap:8px;">
+                    <button class="captain-tab-btn active" id="capTabGeneral" onclick="switchCaptainTab('general')">🗺️ 5 Visas Generales</button>
+                    <button class="captain-tab-btn" id="capTabTesters" onclick="switchCaptainTab('testers')">🧪 Testers (<span id="countTestersBadge">0</span>)</button>
+                    <button class="captain-tab-btn" id="capTabTrainers" onclick="switchCaptainTab('trainers')">🎓 Trainers (<span id="countTrainersBadge">0</span>)</button>
+                </div>
+            </div>
+            
+            <!-- VISTA GENERAL: 5 VISAS -->
+            <div class="table-scroll-wrapper" id="generalWrapper">
                 <div class="grid-table" id="crewTableGrid">
                     <p style="text-align: center; color: var(--text-gray); grid-column: span 6;">Cargando registros de la tripulación...</p>
+                </div>
+            </div>
+
+            <!-- VISTA SEGUIMIENTO TESTERS -->
+            <div class="table-scroll-wrapper" id="testersWrapper" style="display:none;">
+                <div class="grid-table" id="testersTableGrid" style="grid-template-columns: 260px minmax(130px, 1fr) minmax(130px, 1fr) minmax(130px, 1fr) minmax(130px, 1fr) 110px;">
+                    <p style="text-align: center; color: var(--text-gray); grid-column: span 6;">Cargando datos de Testers...</p>
+                </div>
+            </div>
+
+            <!-- VISTA SEGUIMIENTO TRAINERS -->
+            <div class="table-scroll-wrapper" id="trainersWrapper" style="display:none;">
+                <div class="grid-table" id="trainersTableGrid" style="grid-template-columns: 260px minmax(130px, 1fr) minmax(130px, 1fr) minmax(140px, 1fr) minmax(160px, 1fr);">
+                    <p style="text-align: center; color: var(--text-gray); grid-column: span 5;">Cargando datos de Trainers...</p>
                 </div>
             </div>
         </main>
@@ -676,7 +725,11 @@
                         ${badgeOrAvatarHtml}
                         <div class="crew-info">
                             <span class="crew-name">${displayNameText}</span>
-                            <span class="crew-role">${isCaptainSelf ? 'CAPITÁN' : ('DNI: ' + (member['ID Tripulante'] || ''))}</span>
+                            <span class="crew-role">
+                                ${isCaptainSelf ? 'CAPITÁN' : ('DNI: ' + (member['ID Tripulante'] || ''))}
+                                ${Core.isTester(member) ? '<span class="role-badge badge-tester">TESTER</span>' : ''}
+                                ${Core.isTrainer(member) ? '<span class="role-badge badge-trainer">TRAINER</span>' : ''}
+                            </span>
                         </div>
                     </div>
                 `;
@@ -702,7 +755,7 @@
                             ${isDone 
                                 ? `<img src="${visa.imgActiva}" class="badge-img" alt="Insignia Completada">
                                    <div class="prog-container"><div class="prog-bar"><div class="prog-fill-gold" style="width:${pct}%"></div></div><span class="prog-text t-gold">${pct}%</span></div>`
-                                : `<img src="${visa.imgBloqueada}" class="badge-img badge-locked" alt="Insignia Bloqueada">
+                                 : `<img src="${visa.imgBloqueada}" class="badge-img badge-locked" alt="Insignia Bloqueada">
                                    <div class="prog-container"><div class="prog-bar"><div class="prog-fill-gold" style="width:${pct}%"></div></div><span class="prog-text">${pct}%</span></div>`
                             }
                         </div>
@@ -714,7 +767,157 @@
             table.innerHTML = '<p style="text-align: center; color: var(--text-gray); grid-column: span 6; padding: 20px;">No tienes tripulación asignada en el manifiesto actual.</p>';
         }
 
-        // 5. Diario de a Bordo (Feed)
+        // =====================================================================
+        // 5. GENERAR TABLAS DE SEGUIMIENTO: TESTERS Y TRAINERS
+        // =====================================================================
+        const teamTesters = displayList.filter(u => Core.isTester(u));
+        const teamTrainers = displayList.filter(u => Core.isTrainer(u));
+
+        const badgeTestersCount = document.getElementById('countTestersBadge');
+        const badgeTrainersCount = document.getElementById('countTrainersBadge');
+        if (badgeTestersCount) badgeTestersCount.innerText = teamTesters.length;
+        if (badgeTrainersCount) badgeTrainersCount.innerText = teamTrainers.length;
+
+        // Tabla de Testers
+        const testersTable = document.getElementById('testersTableGrid');
+        if (testersTable) {
+            if (teamTesters.length === 0) {
+                testersTable.innerHTML = '<p style="text-align:center; color:var(--text-gray); grid-column:span 6; padding:25px;">No hay tripulantes asignados con el rol Tester en tu equipo.</p>';
+            } else {
+                let tHtml = `
+                    <div class="cell header-cell header-gray">TESTER</div>
+                    <div class="cell header-cell">CAPACITACIÓN TESTER</div>
+                    <div class="cell header-cell">CICLO 1 DE PRUEBAS</div>
+                    <div class="cell header-cell">CICLO 2 DE PRUEBAS</div>
+                    <div class="cell header-cell">CICLO 3 DE PRUEBAS</div>
+                    <div class="cell header-cell">% AVANCE</div>
+                `;
+
+                teamTesters.forEach(tester => {
+                    const st = Core.getTesterStatus(tester.Email);
+                    const isSelf = (tester.Email.toLowerCase() === captainUser.Email.toLowerCase());
+
+                    tHtml += `
+                        <div class="cell crew-cell" ${isSelf ? 'style="border-left: 4px solid var(--gold-primary);"' : ''}>
+                            <div class="crew-avatar"><span>🧪</span></div>
+                            <div class="crew-info">
+                                <span class="crew-name">${Core.formatName(tester)} ${isSelf ? '(Tú)' : ''}</span>
+                                <span class="crew-role">${tester.Email}</span>
+                            </div>
+                        </div>
+
+                        <!-- Capacitación -->
+                        <div class="cell visa-cell" style="padding:10px; text-align:center;">
+                            ${st.training 
+                                ? `<span style="font-size:18px;">✅</span><span style="font-size:10px; font-weight:900; color:#2E8B57;">Asistido</span><span style="font-size:9px; color:var(--text-gray);">${st.training.fecha}</span>` 
+                                : `<span style="font-size:18px; opacity:0.4;">⏳</span><span style="font-size:10px; color:var(--text-gray);">Pendiente</span>`
+                            }
+                        </div>
+
+                        <!-- Ciclo 1 -->
+                        <div class="cell visa-cell" style="padding:10px; text-align:center;">
+                            ${st.cycle1 
+                                ? `<span style="font-size:18px;">📋</span><span style="font-size:10px; font-weight:900; color:#2E8B57;">Entregado</span><span style="font-size:9px; color:var(--text-gray);">${st.cycle1.fecha}</span>${st.cycle1.fileName ? `<span style="font-size:8px; color:var(--gold-primary); text-overflow:ellipsis; overflow:hidden; max-width:110px; white-space:nowrap;">📎 ${st.cycle1.fileName}</span>` : ''}` 
+                                : `<span style="font-size:18px; opacity:0.4;">⏳</span><span style="font-size:10px; color:var(--text-gray);">Pendiente</span>`
+                            }
+                        </div>
+
+                        <!-- Ciclo 2 -->
+                        <div class="cell visa-cell" style="padding:10px; text-align:center;">
+                            ${st.cycle2 
+                                ? `<span style="font-size:18px;">📋</span><span style="font-size:10px; font-weight:900; color:#2E8B57;">Entregado</span><span style="font-size:9px; color:var(--text-gray);">${st.cycle2.fecha}</span>${st.cycle2.fileName ? `<span style="font-size:8px; color:var(--gold-primary); text-overflow:ellipsis; overflow:hidden; max-width:110px; white-space:nowrap;">📎 ${st.cycle2.fileName}</span>` : ''}` 
+                                : `<span style="font-size:18px; opacity:0.4;">⏳</span><span style="font-size:10px; color:var(--text-gray);">Pendiente</span>`
+                            }
+                        </div>
+
+                        <!-- Ciclo 3 -->
+                        <div class="cell visa-cell" style="padding:10px; text-align:center;">
+                            ${st.cycle3 
+                                ? `<span style="font-size:18px;">📋</span><span style="font-size:10px; font-weight:900; color:#2E8B57;">Entregado</span><span style="font-size:9px; color:var(--text-gray);">${st.cycle3.fecha}</span>${st.cycle3.fileName ? `<span style="font-size:8px; color:var(--gold-primary); text-overflow:ellipsis; overflow:hidden; max-width:110px; white-space:nowrap;">📎 ${st.cycle3.fileName}</span>` : ''}` 
+                                : `<span style="font-size:18px; opacity:0.4;">⏳</span><span style="font-size:10px; color:var(--text-gray);">Pendiente</span>`
+                            }
+                        </div>
+
+                        <!-- Avance % -->
+                        <div class="cell visa-cell" style="padding:10px; text-align:center; justify-content:center;">
+                            <span style="font-size:15px; font-weight:900; color:${st.percent === 100 ? '#2E8B57' : 'var(--gold-primary)'};">${st.percent}%</span>
+                            <span style="font-size:9px; color:var(--text-gray);">${st.completedCount}/4 Hitos</span>
+                        </div>
+                    `;
+                });
+                testersTable.innerHTML = tHtml;
+            }
+        }
+
+        // Tabla de Trainers
+        const trainersTable = document.getElementById('trainersTableGrid');
+        if (trainersTable) {
+            if (teamTrainers.length === 0) {
+                trainersTable.innerHTML = '<p style="text-align:center; color:var(--text-gray); grid-column:span 5; padding:25px;">No hay tripulantes asignados con el rol Trainer en tu equipo.</p>';
+            } else {
+                let trHtml = `
+                    <div class="cell header-cell header-gray">INSTRUCTOR TRAINER</div>
+                    <div class="cell header-cell">SESIÓN 1 (MÍNIMO)</div>
+                    <div class="cell header-cell">SESIÓN 2 (MÍNIMO)</div>
+                    <div class="cell header-cell">ALUMNOS DESIGNADOS</div>
+                    <div class="cell header-cell">ALERTAS DE REFUERZO</div>
+                `;
+
+                teamTrainers.forEach(trainer => {
+                    const st = Core.getTrainerStatus(trainer.Email, allData);
+                    const isSelf = (trainer.Email.toLowerCase() === captainUser.Email.toLowerCase());
+
+                    // Alumnos con solicitud de refuerzo
+                    const studentsNeedingHelp = st.assignedUsers.filter(u => 
+                        (u.eval1 && u.eval1.requiereRefuerzo) || (u.eval2 && u.eval2.requiereRefuerzo)
+                    );
+
+                    trHtml += `
+                        <div class="cell crew-cell" ${isSelf ? 'style="border-left: 4px solid var(--gold-primary);"' : ''}>
+                            <div class="crew-avatar"><span>🎓</span></div>
+                            <div class="crew-info">
+                                <span class="crew-name">${Core.formatName(trainer)} ${isSelf ? '(Tú)' : ''}</span>
+                                <span class="crew-role">${trainer.Email}</span>
+                            </div>
+                        </div>
+
+                        <!-- Sesión 1 -->
+                        <div class="cell visa-cell" style="padding:10px; text-align:center;">
+                            ${st.session1 
+                                ? `<span style="font-size:18px;">🎯</span><span style="font-size:10px; font-weight:900; color:#2E8B57;">Realizada</span><span style="font-size:9px; color:var(--text-gray);">${st.session1.fecha}</span><span style="font-size:8px; color:var(--navy-dark);">${st.session1.tema}</span>` 
+                                : `<span style="font-size:18px; opacity:0.4;">⏳</span><span style="font-size:10px; color:var(--text-gray);">Pendiente</span>`
+                            }
+                        </div>
+
+                        <!-- Sesión 2 -->
+                        <div class="cell visa-cell" style="padding:10px; text-align:center;">
+                            ${st.session2 
+                                ? `<span style="font-size:18px;">🎯</span><span style="font-size:10px; font-weight:900; color:#2E8B57;">Realizada</span><span style="font-size:9px; color:var(--text-gray);">${st.session2.fecha}</span><span style="font-size:8px; color:var(--navy-dark);">${st.session2.tema}</span>` 
+                                : `<span style="font-size:18px; opacity:0.4;">⏳</span><span style="font-size:10px; color:var(--text-gray);">Pendiente</span>`
+                            }
+                        </div>
+
+                        <!-- Alumnos Designados -->
+                        <div class="cell visa-cell" style="padding:10px; text-align:center; justify-content:center;">
+                            <span style="font-size:15px; font-weight:900; color:var(--navy-dark);">👥 ${st.assignedUsers.length}</span>
+                            <span style="font-size:9px; color:var(--text-gray);">${st.assignedUsers.length === 1 ? 'Tripulante' : 'Tripulantes'} asignados</span>
+                        </div>
+
+                        <!-- Alertas de Refuerzo -->
+                        <div class="cell visa-cell" style="padding:10px; text-align:center; justify-content:center;">
+                            ${studentsNeedingHelp.length > 0 
+                                ? `<span style="background:#FFE4E1; color:#C0392B; padding:3px 8px; border-radius:12px; font-size:10px; font-weight:900;">⚠️ ${studentsNeedingHelp.length} Piden Refuerzo</span>
+                                   <div style="font-size:9px; color:var(--text-gray); margin-top:4px;">${studentsNeedingHelp.map(s => Core.formatName(s.user)).join(', ')}</div>` 
+                                : `<span style="color:#2E8B57; font-size:11px; font-weight:800;">✅ Sin alertas</span>`
+                            }
+                        </div>
+                    `;
+                });
+                trainersTable.innerHTML = trHtml;
+            }
+        }
+
+        // 6. Diario de a Bordo (Feed)
         const feedList = document.getElementById('feedList');
         if (feedList) {
             const achievements = Core.getLatestAchievements(allData, captainEmail);
@@ -739,6 +942,24 @@
             logoutBtn.onclick = () => { if(confirm('¿Abandonar el puesto de mando (Cerrar sesión)?')) Core.logout(); };
         }
     });
+
+    window.switchCaptainTab = function(tab) {
+        document.querySelectorAll('.captain-tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('generalWrapper').style.display = 'none';
+        document.getElementById('testersWrapper').style.display = 'none';
+        document.getElementById('trainersWrapper').style.display = 'none';
+
+        if (tab === 'testers') {
+            document.getElementById('capTabTesters').classList.add('active');
+            document.getElementById('testersWrapper').style.display = 'block';
+        } else if (tab === 'trainers') {
+            document.getElementById('capTabTrainers').classList.add('active');
+            document.getElementById('trainersWrapper').style.display = 'block';
+        } else {
+            document.getElementById('capTabGeneral').classList.add('active');
+            document.getElementById('generalWrapper').style.display = 'block';
+        }
+    };
 </script>
 
 </body>

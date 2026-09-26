@@ -346,6 +346,67 @@
         }
         .btn-save-profile:active { transform: translateY(2px); }
 
+        /* --- PESTAÑAS DE RUTAS ESPECIALES (TESTER / TRAINER) --- */
+        .route-tabs-bar {
+            display: flex; gap: 6px; margin-bottom: 12px; border-bottom: 2px solid var(--silver); padding-bottom: 8px;
+        }
+        .route-tab-btn {
+            flex: 1; background: #E8E2D2; border: 1px solid var(--silver); border-radius: 6px;
+            padding: 6px 4px; font-size: 10px; font-weight: 900; color: var(--navy-dark);
+            cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center;
+            gap: 4px; text-transform: uppercase; font-family: 'Lato', sans-serif;
+        }
+        .route-tab-btn:hover { background: #fff; border-color: var(--gold-primary); }
+        .route-tab-btn.active {
+            background: linear-gradient(180deg, var(--gold-light), var(--gold-primary));
+            color: var(--navy-dark); border-color: var(--navy-dark);
+            box-shadow: 0 2px 5px rgba(15,32,53,0.15);
+        }
+
+        /* Tarjetas de Desafíos Especiales */
+        .special-card {
+            background: #fff; border: 1px solid var(--silver); border-radius: 8px;
+            padding: 10px; text-align: center; box-shadow: 0 2px 5px rgba(15,32,53,0.05);
+            display: flex; flex-direction: column; justify-content: space-between; min-height: 125px;
+            transition: 0.2s;
+        }
+        .special-card.completed {
+            border-color: var(--gold-primary); background: rgba(197, 160, 89, 0.08);
+        }
+        .special-card-icon { font-size: 22px; margin-bottom: 2px; }
+        .special-card-title { font-size: 11px; font-weight: 800; color: var(--navy-dark); line-height: 1.2; margin-bottom: 4px; }
+        .special-card-status { font-size: 10px; font-weight: 700; color: var(--text-gray); margin-bottom: 6px; }
+        .special-card-status.done { color: #2E8B57; font-weight: 900; }
+        
+        .btn-special-action {
+            background: linear-gradient(180deg, var(--gold-light), var(--gold-primary));
+            border: 1px solid var(--navy-dark); padding: 5px 8px; font-size: 10px;
+            font-weight: 900; color: var(--navy-dark); text-transform: uppercase;
+            cursor: pointer; border-radius: 4px; transition: 0.2s; font-family: 'Lato', sans-serif;
+        }
+        .btn-special-action:hover { background: var(--gold-light); }
+        .btn-special-action:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* Form Controls en Modales */
+        .modal-form-group {
+            text-align: left; margin-bottom: 15px;
+        }
+        .modal-form-group label {
+            display: block; font-size: 11px; font-weight: 800; color: var(--navy-dark);
+            text-transform: uppercase; margin-bottom: 5px;
+        }
+        .modal-input, .modal-textarea, .modal-select {
+            width: 100%; padding: 10px; border: 1px solid var(--silver); border-radius: 6px;
+            font-family: 'Lato', sans-serif; font-size: 13px; color: var(--navy-dark);
+            box-sizing: border-box; background: #fff;
+        }
+        .modal-input:focus, .modal-textarea:focus, .modal-select:focus {
+            outline: none; border-color: var(--gold-primary);
+        }
+        .file-upload-preview {
+            font-size: 11px; color: var(--text-gray); margin-top: 4px; font-style: italic;
+        }
+
     </style>
 </head>
 <body>
@@ -437,58 +498,199 @@
         </div>
     </aside>
 
-    <!-- BITÁCORA DERECHA (Página 10 - Medallas) -->
+    <!-- BITÁCORA DERECHA (Página 10 - Medallas y Rutas Especiales) -->
     <div class="odyssey-panel bitacora">
         <div class="rivet r-tl"></div><div class="rivet r-tr"></div><div class="rivet r-bl"></div><div class="rivet r-br"></div>
-        <div class="panel-title serif-text">Mis Insignias de la Odisea</div>
-        <div class="badges-container">
-            
-            <div class="badge-slot">
-                <div class="badge-img-wrapper">
-                    <img id="badge1" src="img/Badge_1_InActivo.png" alt="Insignia Argonauta" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2907/2907150.png'">
+        
+        <!-- SELECTOR DE RUTAS (TABS) -->
+        <div class="route-tabs-bar" id="routeTabsBar" style="display:none;">
+            <button class="route-tab-btn active" id="tabGeneral" onclick="switchRouteView('general')">🗺️ Ruta General</button>
+            <button class="route-tab-btn" id="tabTester" style="display:none;" onclick="switchRouteView('tester')">🧪 Ruta Tester</button>
+            <button class="route-tab-btn" id="tabTrainer" style="display:none;" onclick="switchRouteView('trainer')">🎓 Ruta Trainer</button>
+        </div>
+
+        <!-- VISTA 1: RUTA GENERAL (5 VISAS) -->
+        <div id="routeGeneralView">
+            <div class="panel-title serif-text">Mis Insignias de la Odisea</div>
+            <div class="badges-container">
+                <div class="badge-slot">
+                    <div class="badge-img-wrapper">
+                        <img id="badge1" src="img/Badge_1_InActivo.png" alt="Insignia Argonauta" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2907/2907150.png'">
+                    </div>
+                    <div class="badge-label">Argonauta</div>
+                    <div class="badge-sub">La Profecía</div>
+                    <div class="badge-prog-container"><div class="badge-prog-bar"><div class="badge-prog-fill" id="prog_badge1" style="width:0%;"></div></div><span class="badge-prog-text" id="pct_badge1">0%</span></div>
                 </div>
-                <div class="badge-label">Argonauta</div>
-                <div class="badge-sub">La Profecía</div>
-                <div class="badge-prog-container"><div class="badge-prog-bar"><div class="badge-prog-fill" id="prog_badge1" style="width:0%;"></div></div><span class="badge-prog-text" id="pct_badge1">0%</span></div>
-            </div>
-            
-            <div class="badge-slot">
-                <div class="badge-img-wrapper">
-                    <img id="badge2" src="img/Badge_2_InActivo.png" alt="Insignia Navegante" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2907/2907150.png'">
+                
+                <div class="badge-slot">
+                    <div class="badge-img-wrapper">
+                        <img id="badge2" src="img/Badge_2_InActivo.png" alt="Insignia Navegante" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2907/2907150.png'">
+                    </div>
+                    <div class="badge-label">Navegante</div>
+                    <div class="badge-sub">Salida de Troya</div>
+                    <div class="badge-prog-container"><div class="badge-prog-bar"><div class="badge-prog-fill" id="prog_badge2" style="width:0%;"></div></div><span class="badge-prog-text" id="pct_badge2">0%</span></div>
                 </div>
-                <div class="badge-label">Navegante</div>
-                <div class="badge-sub">Salida de Troya</div>
-                <div class="badge-prog-container"><div class="badge-prog-bar"><div class="badge-prog-fill" id="prog_badge2" style="width:0%;"></div></div><span class="badge-prog-text" id="pct_badge2">0%</span></div>
-            </div>
-            
-            <div class="badge-slot">
-                <div class="badge-img-wrapper">
-                    <img id="badge3" src="img/Badge_3_InActivo.png" alt="Insignia Estratega" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2907/2907150.png'">
+                
+                <div class="badge-slot">
+                    <div class="badge-img-wrapper">
+                        <img id="badge3" src="img/Badge_3_InActivo.png" alt="Insignia Estratega" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2907/2907150.png'">
+                    </div>
+                    <div class="badge-label">Estratega</div>
+                    <div class="badge-sub">La Cueva y la Isla</div>
+                    <div class="badge-prog-container"><div class="badge-prog-bar"><div class="badge-prog-fill" id="prog_badge3" style="width:0%;"></div></div><span class="badge-prog-text" id="pct_badge3">0%</span></div>
                 </div>
-                <div class="badge-label">Estratega</div>
-                <div class="badge-sub">La Cueva y la Isla</div>
-                <div class="badge-prog-container"><div class="badge-prog-bar"><div class="badge-prog-fill" id="prog_badge3" style="width:0%;"></div></div><span class="badge-prog-text" id="pct_badge3">0%</span></div>
-            </div>
-            
-            <div class="badge-slot">
-                <div class="badge-img-wrapper">
-                    <img id="badge4" src="img/Badge_4_InActivo.png" alt="Insignia Timonel" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2907/2907150.png'">
+                
+                <div class="badge-slot">
+                    <div class="badge-img-wrapper">
+                        <img id="badge4" src="img/Badge_4_InActivo.png" alt="Insignia Timonel" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2907/2907150.png'">
+                    </div>
+                    <div class="badge-label">Timonel</div>
+                    <div class="badge-sub">Estrecho de Sirenas</div>
+                    <div class="badge-prog-container"><div class="badge-prog-bar"><div class="badge-prog-fill" id="prog_badge4" style="width:0%;"></div></div><span class="badge-prog-text" id="pct_badge4">0%</span></div>
                 </div>
-                <div class="badge-label">Timonel</div>
-                <div class="badge-sub">Estrecho de Sirenas</div>
-                <div class="badge-prog-container"><div class="badge-prog-bar"><div class="badge-prog-fill" id="prog_badge4" style="width:0%;"></div></div><span class="badge-prog-text" id="pct_badge4">0%</span></div>
-            </div>
-            
-            <div class="badge-slot">
-                <div class="badge-img-wrapper">
-                    <img id="badge5" src="img/Badge_5_InActivo.png" alt="Insignia Ulises" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2907/2907150.png'">
+                
+                <div class="badge-slot">
+                    <div class="badge-img-wrapper">
+                        <img id="badge5" src="img/Badge_5_InActivo.png" alt="Insignia Ulises" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2907/2907150.png'">
+                    </div>
+                    <div class="badge-label">Insignia Ulises</div>
+                    <div class="badge-sub">Destino: Ítaca</div>
+                    <div class="badge-prog-container"><div class="badge-prog-bar"><div class="badge-prog-fill" id="prog_badge5" style="width:0%;"></div></div><span class="badge-prog-text" id="pct_badge5">0%</span></div>
                 </div>
-                <div class="badge-label">Insignia Ulises</div>
-                <div class="badge-sub">Destino: Ítaca</div>
-                <div class="badge-prog-container"><div class="badge-prog-bar"><div class="badge-prog-fill" id="prog_badge5" style="width:0%;"></div></div><span class="badge-prog-text" id="pct_badge5">0%</span></div>
             </div>
 
+            <!-- TARJETA: TRAINER ASIGNADO (Solo visible si tiene Trainer a Cargo) -->
+            <div id="assignedTrainerCard" style="display:none; margin-top:14px; background:#fff; border:1px solid var(--gold-primary); border-radius:8px; padding:12px; text-align:left;">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #EAEAEA; padding-bottom:8px; margin-bottom:8px;">
+                    <div>
+                        <div style="font-size:10px; font-weight:900; color:var(--gold-primary); text-transform:uppercase;">🎓 Tu Trainer Asignado</div>
+                        <div id="assignedTrainerName" style="font-size:13px; font-weight:900; color:var(--navy-dark);">---</div>
+                        <div id="assignedTrainerSub" style="font-size:10px; color:var(--text-gray);">---</div>
+                    </div>
+                    <button id="btnOpenEvalTrainer" class="btn-special-action" style="padding:6px 12px; font-size:10px;">📋 Evaluar / Ver Sesiones</button>
+                </div>
+                <!-- Resumen de estado de las 2 sesiones -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                    <div id="cardStatusSession1" style="background:var(--bg-parchment); border:1px solid var(--silver); border-radius:6px; padding:6px 8px; cursor:pointer;" onclick="openNormalEvalModal(1)">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:10px; font-weight:900; color:var(--navy-dark);">SESIÓN 1</span>
+                            <span id="badgeS1" style="font-size:9px; font-weight:800; color:#C5A059;">⏳ Pendiente</span>
+                        </div>
+                        <div id="detailS1" style="font-size:9px; color:var(--text-gray); margin-top:2px;">Haz clic para evaluar</div>
+                    </div>
+                    <div id="cardStatusSession2" style="background:var(--bg-parchment); border:1px solid var(--silver); border-radius:6px; padding:6px 8px; cursor:pointer;" onclick="openNormalEvalModal(2)">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:10px; font-weight:900; color:var(--navy-dark);">SESIÓN 2</span>
+                            <span id="badgeS2" style="font-size:9px; font-weight:800; color:#C5A059;">⏳ Pendiente</span>
+                        </div>
+                        <div id="detailS2" style="font-size:9px; color:var(--text-gray); margin-top:2px;">Haz clic para evaluar</div>
+                    </div>
+                </div>
+            </div>
         </div>
+
+        <!-- VISTA 2: RUTA DE TESTER -->
+        <div id="routeTesterView" style="display:none;">
+            <div class="panel-title serif-text">Ruta de Especialista Tester</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#fff; padding:8px 12px; border:1px solid var(--silver); border-radius:6px; margin-bottom:12px;">
+                <span style="font-size:11px; font-weight:800; color:var(--navy-dark);">DESAFÍOS TESTER COMPLETADOS:</span>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <div style="width:90px; height:8px; background:#E2E8ED; border-radius:4px; overflow:hidden; border:1px solid var(--silver);">
+                        <div id="testerProgFill" style="height:100%; width:0%; background:linear-gradient(90deg, var(--gold-light), var(--gold-primary)); transition: width 0.4s;"></div>
+                    </div>
+                    <span id="testerProgPct" style="font-size:11px; font-weight:900; color:var(--gold-primary);">0/4</span>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <!-- Desafío 1: Capacitación Tester -->
+                <div class="special-card" id="cardTesterTraining">
+                    <div>
+                        <div class="special-card-icon">📚</div>
+                        <div class="special-card-title">Capacitación Tester</div>
+                        <div class="special-card-status" id="statusTesterTraining">Pendiente de asistir</div>
+                    </div>
+                    <button class="btn-special-action" id="btnTesterTraining">He Asistido</button>
+                </div>
+
+                <!-- Desafío 2: Ciclo 1 de Pruebas -->
+                <div class="special-card" id="cardTesterCycle1">
+                    <div>
+                        <div class="special-card-icon">🧪</div>
+                        <div class="special-card-title">Ciclo 1 de Pruebas</div>
+                        <div class="special-card-status" id="statusTesterCycle1">Pendiente</div>
+                    </div>
+                    <button class="btn-special-action" id="btnTesterCycle1">Enviar Planilla</button>
+                </div>
+
+                <!-- Desafío 3: Ciclo 2 de Pruebas -->
+                <div class="special-card" id="cardTesterCycle2">
+                    <div>
+                        <div class="special-card-icon">🧪</div>
+                        <div class="special-card-title">Ciclo 2 de Pruebas</div>
+                        <div class="special-card-status" id="statusTesterCycle2">Pendiente</div>
+                    </div>
+                    <button class="btn-special-action" id="btnTesterCycle2">Enviar Planilla</button>
+                </div>
+
+                <!-- Desafío 4: Ciclo 3 de Pruebas -->
+                <div class="special-card" id="cardTesterCycle3">
+                    <div>
+                        <div class="special-card-icon">🧪</div>
+                        <div class="special-card-title">Ciclo 3 de Pruebas</div>
+                        <div class="special-card-status" id="statusTesterCycle3">Pendiente</div>
+                    </div>
+                    <button class="btn-special-action" id="btnTesterCycle3">Enviar Planilla</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA 3: RUTA DE TRAINER -->
+        <div id="routeTrainerView" style="display:none;">
+            <div class="panel-title serif-text">Ruta de Instructor Trainer</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#fff; padding:8px 12px; border:1px solid var(--silver); border-radius:6px; margin-bottom:12px;">
+                <span style="font-size:11px; font-weight:800; color:var(--navy-dark);">SESIONES MÍNIMAS (2):</span>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <div style="width:90px; height:8px; background:#E2E8ED; border-radius:4px; overflow:hidden; border:1px solid var(--silver);">
+                        <div id="trainerProgFill" style="height:100%; width:0%; background:linear-gradient(90deg, #50C878, #2E8B57); transition: width 0.4s;"></div>
+                    </div>
+                    <span id="trainerProgPct" style="font-size:11px; font-weight:900; color:var(--navy-dark);">0/2</span>
+                </div>
+            </div>
+
+            <!-- Sesiones Realizadas -->
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+                <div class="special-card" id="cardTrainerS1">
+                    <div>
+                        <div class="special-card-icon">🎯</div>
+                        <div class="special-card-title">Sesión 1 de Capacitación</div>
+                        <div class="special-card-status" id="statusTrainerS1">Pendiente</div>
+                    </div>
+                    <button class="btn-special-action" id="btnTrainerS1">Registrar Sesión</button>
+                </div>
+
+                <div class="special-card" id="cardTrainerS2">
+                    <div>
+                        <div class="special-card-icon">🎯</div>
+                        <div class="special-card-title">Sesión 2 de Capacitación</div>
+                        <div class="special-card-status" id="statusTrainerS2">Pendiente</div>
+                    </div>
+                    <button class="btn-special-action" id="btnTrainerS2">Registrar Sesión</button>
+                </div>
+            </div>
+
+            <!-- Alumnos Asignados -->
+            <div style="background:#fff; border:1px solid var(--silver); border-radius:6px; padding:10px;">
+                <div style="font-size:11px; font-weight:900; color:var(--navy-dark); margin-bottom:8px; display:flex; justify-content:space-between;">
+                    <span>👥 TRIPULANTES A CARGO:</span>
+                    <span id="trainerStudentCount" style="color:var(--text-gray);">0 asignados</span>
+                </div>
+                <div id="trainerStudentList" style="max-height:160px; overflow-y:auto; text-align:left;">
+                    <!-- Filas inyectadas dinámicamente -->
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- DESAFÍO INFERIOR -->
@@ -526,6 +728,98 @@
             
             <button class="btn-save-profile" id="btnSaveProfile">Actualizar Registro</button>
             <p style="margin-top: 15px; cursor: pointer; color: var(--text-gray); font-weight: bold; font-size: 12px; text-transform: uppercase;" onclick="document.getElementById('profilePopup').style.display='none'">Cerrar</p>
+        </div>
+    </div>
+
+    <!-- MODAL TESTER: SUBIR Y ENVIAR PLANILLA DE CICLO -->
+    <div class="profile-modal-overlay" id="testerUploadModal">
+        <div class="profile-modal" style="max-width:550px;">
+            <div class="rivet r-tl"></div><div class="rivet r-tr"></div><div class="rivet r-bl"></div><div class="rivet r-br"></div>
+            <h2 id="testerModalTitle">Entrega de Planilla de Pruebas</h2>
+            <p>La planilla se remitirá vía email a <strong>gsalinas@pjportland.cl</strong> con copia a tu correo y se registrará la fecha en <strong>Registro2</strong>.</p>
+            
+            <div class="modal-form-group">
+                <label>Planilla de Resultados (Excel .xlsx / .csv / .pdf):</label>
+                <input type="file" id="testerFileInput" class="modal-input" accept=".xlsx,.xls,.csv,.pdf">
+                <div class="file-upload-preview" id="testerFileNotice">Selecciona el archivo de tu equipo.</div>
+            </div>
+
+            <div class="modal-form-group">
+                <label>Observaciones o Notas del Ciclo (Opcional):</label>
+                <textarea id="testerNotesInput" class="modal-textarea" rows="3" placeholder="Ej: 100% de casos ejecutados, 2 incidencias leves reportadas..."></textarea>
+            </div>
+
+            <button class="btn-save-profile" id="btnSubmitTesterCycle">📤 Enviar Planilla por Correo y Registrar</button>
+            <p style="margin-top: 15px; cursor: pointer; color: var(--text-gray); font-weight: bold; font-size: 12px; text-transform: uppercase;" onclick="closeModal('testerUploadModal')">Cancelar</p>
+        </div>
+    </div>
+
+    <!-- MODAL TRAINER: REGISTRAR SESIÓN -->
+    <div class="profile-modal-overlay" id="trainerSessionModal">
+        <div class="profile-modal" style="max-width:500px;">
+            <div class="rivet r-tl"></div><div class="rivet r-tr"></div><div class="rivet r-bl"></div><div class="rivet r-br"></div>
+            <h2 id="trainerModalTitle">Registro de Sesión de Capacitación</h2>
+            <p>Registra la sesión impartida para el seguimiento en <strong>Registro2</strong>.</p>
+
+            <div class="modal-form-group">
+                <label>Tema Tratado en la Sesión:</label>
+                <input type="text" id="trainerTopicInput" class="modal-input" placeholder="Ej: Creación de Pedidos y Facturación en SAP">
+            </div>
+
+            <div class="modal-form-group">
+                <label>Comentarios / Acuerdos:</label>
+                <textarea id="trainerNotesInput" class="modal-textarea" rows="3" placeholder="Ej: Asistieron todos los usuarios asignados, se resolvieron dudas..."></textarea>
+            </div>
+
+            <button class="btn-save-profile" id="btnSubmitTrainerSession">💾 Guardar Registro de Sesión</button>
+            <p style="margin-top: 15px; cursor: pointer; color: var(--text-gray); font-weight: bold; font-size: 12px; text-transform: uppercase;" onclick="closeModal('trainerSessionModal')">Cancelar</p>
+        </div>
+    </div>
+
+    <!-- MODAL USUARIO NORMAL: EVALUAR CAPACITACIÓN CON TRAINER -->
+    <div class="profile-modal-overlay" id="normalEvalModal">
+        <div class="profile-modal" style="max-width:520px;">
+            <div class="rivet r-tl"></div><div class="rivet r-tr"></div><div class="rivet r-bl"></div><div class="rivet r-br"></div>
+            <h2 id="evalModalTitle">Evaluación de Capacitación</h2>
+            <p id="evalModalSub">Reporta tu participación con tu Trainer para coordinar refuerzos si lo requieres.</p>
+
+            <!-- Banner Informativo si ya está evaluada -->
+            <div id="evalAlreadyDoneNotice" style="display:none; background:#E8F8F0; border:1px solid #2E8B57; border-radius:6px; padding:10px 12px; margin-bottom:15px; font-size:11px; color:#1E5E3A; font-weight:700; text-align:left;">
+                ℹ️ Esta sesión ya fue evaluada el <span id="evalDoneDateText" style="font-weight:900;">---</span>.<br>
+                <span style="font-size:10px; font-weight:normal; color:#2E8B57;">Mostrando datos en modo consulta (no modificable).</span>
+            </div>
+
+            <div class="modal-form-group">
+                <label>Selecciona la Sesión:</label>
+                <select id="evalSessionSelect" class="modal-select" onchange="onEvalSessionChanged()">
+                    <option value="1">Sesión 1 de Capacitación</option>
+                    <option value="2">Sesión 2 de Capacitación</option>
+                </select>
+            </div>
+
+            <div class="modal-form-group">
+                <label>Nivel de Preparación Logrado:</label>
+                <select id="evalLevelSelect" class="modal-select">
+                    <option value="5">⭐⭐⭐⭐⭐ Excelente - Me siento totalmente preparado</option>
+                    <option value="4">⭐⭐⭐⭐ Muy Bueno - Preparado con dudas puntuales</option>
+                    <option value="3">⭐⭐⭐ Intermedio - Comprendo pero necesito practicar más</option>
+                    <option value="2">⭐⭐ Básico - Tengo dudas importantes en varios procesos</option>
+                    <option value="1">⭐ Insuficiente - No me siento preparado aún</option>
+                </select>
+            </div>
+
+            <div class="modal-form-group" style="display:flex; align-items:center; gap:10px; background:#fff; padding:10px; border:1px solid var(--silver); border-radius:6px;">
+                <input type="checkbox" id="evalNeedReinforce" style="width:18px; height:18px; cursor:pointer;">
+                <label for="evalNeedReinforce" style="margin:0; font-size:12px; font-weight:700; cursor:pointer;">¿Consideras necesaria una sesión de refuerzo adicional?</label>
+            </div>
+
+            <div class="modal-form-group">
+                <label>Comentarios o Temas a Reforzar:</label>
+                <textarea id="evalCommentsInput" class="modal-textarea" rows="2" placeholder="Describe qué aspectos te gustaría repasar..."></textarea>
+            </div>
+
+            <button class="btn-save-profile" id="btnSubmitNormalEval">📤 Enviar Evaluación y Registrar</button>
+            <p style="margin-top: 15px; cursor: pointer; color: var(--text-gray); font-weight: bold; font-size: 12px; text-transform: uppercase;" onclick="closeModal('normalEvalModal')">Cerrar</p>
         </div>
     </div>
 
@@ -754,7 +1048,381 @@
 
         // 6. Logout
         document.querySelector('.header-left').onclick = () => { if(confirm('¿Abandonar el barco (Cerrar sesión)?')) Core.logout(); };
+
+        // =====================================================================
+        // 7. INICIALIZACIÓN DE RUTAS ESPECIALES (TESTER / TRAINER / ALUMNO)
+        // =====================================================================
+        const hasTester = Core.isTester(user);
+        const hasTrainer = Core.isTrainer(user);
+        const trainerAssigned = Core.getTrainerForUser(user, allData);
+
+        const routeTabsBar = document.getElementById('routeTabsBar');
+        const tabTester = document.getElementById('tabTester');
+        const tabTrainer = document.getElementById('tabTrainer');
+
+        if (hasTester || hasTrainer) {
+            if (routeTabsBar) routeTabsBar.style.display = 'flex';
+            if (hasTester && tabTester) tabTester.style.display = 'flex';
+            if (hasTrainer && tabTrainer) tabTrainer.style.display = 'flex';
+        }
+
+        // --- SUB-SECCIÓN ALUMNO (Usuario Normal con Trainer asignado) ---
+        const assignedTrainerCard = document.getElementById('assignedTrainerCard');
+        if (trainerAssigned && assignedTrainerCard) {
+            assignedTrainerCard.style.display = 'block';
+            document.getElementById('assignedTrainerName').innerText = Core.formatName(trainerAssigned);
+            document.getElementById('assignedTrainerSub').innerText = trainerAssigned.Email;
+            
+            updateAssignedTrainerCardUI(user);
+
+            document.getElementById('btnOpenEvalTrainer').onclick = () => {
+                const s1 = Core.getNormalUserEval(user.Email, 1);
+                const defaultS = s1 ? 2 : 1;
+                openNormalEvalModal(defaultS);
+            };
+        }
+
+        window.openNormalEvalModal = function(sessionNum = 1) {
+            const select = document.getElementById('evalSessionSelect');
+            if (select) {
+                const s1 = Core.getNormalUserEval(user.Email, 1);
+                const s2 = Core.getNormalUserEval(user.Email, 2);
+                select.options[0].text = `Sesión 1 de Capacitación ${s1 ? '(✅ Evaluada)' : '(⏳ Pendiente)'}`;
+                select.options[1].text = `Sesión 2 de Capacitación ${s2 ? '(✅ Evaluada)' : '(⏳ Pendiente)'}`;
+                select.value = String(sessionNum);
+            }
+            onEvalSessionChanged();
+            document.getElementById('normalEvalModal').style.display = 'flex';
+        };
+
+        window.onEvalSessionChanged = function() {
+            const sessionNum = document.getElementById('evalSessionSelect').value;
+            const existing = Core.getNormalUserEval(user.Email, sessionNum);
+
+            const notice = document.getElementById('evalAlreadyDoneNotice');
+            const noticeDate = document.getElementById('evalDoneDateText');
+            const selectLevel = document.getElementById('evalLevelSelect');
+            const checkReinforce = document.getElementById('evalNeedReinforce');
+            const txtComments = document.getElementById('evalCommentsInput');
+            const btnSubmit = document.getElementById('btnSubmitNormalEval');
+
+            if (existing) {
+                // MODO CONSULTA: YA EVALUADA (Solo lectura, no permitir reevaluar)
+                if (notice) notice.style.display = 'block';
+                if (noticeDate) noticeDate.innerText = existing.fecha || 'previamente';
+
+                if (existing.nivel) {
+                    selectLevel.value = String(existing.nivel);
+                } else if (existing.evaluacion) {
+                    for (let opt of selectLevel.options) {
+                        if (opt.text.trim() === existing.evaluacion.trim() || opt.text.startsWith(existing.evaluacion.substring(0, 5))) {
+                            selectLevel.value = opt.value;
+                            break;
+                        }
+                    }
+                }
+                selectLevel.disabled = true;
+
+                checkReinforce.checked = !!existing.requiereRefuerzo;
+                checkReinforce.disabled = true;
+
+                txtComments.value = existing.observaciones || '(Sin comentarios registrados)';
+                txtComments.readOnly = true;
+
+                btnSubmit.disabled = true;
+                btnSubmit.innerText = '🔒 Sesión ya evaluada (No modificable)';
+                btnSubmit.style.opacity = '0.6';
+                btnSubmit.style.cursor = 'not-allowed';
+            } else {
+                // MODO NUEVA EVALUACIÓN (Editable)
+                if (notice) notice.style.display = 'none';
+
+                selectLevel.disabled = false;
+                selectLevel.value = '5';
+
+                checkReinforce.checked = false;
+                checkReinforce.disabled = false;
+
+                txtComments.value = '';
+                txtComments.readOnly = false;
+
+                btnSubmit.disabled = false;
+                btnSubmit.innerText = '📤 Enviar Evaluación y Registrar';
+                btnSubmit.style.opacity = '1';
+                btnSubmit.style.cursor = 'pointer';
+            }
+        };
+
+        function updateAssignedTrainerCardUI(user) {
+            const s1 = Core.getNormalUserEval(user.Email, 1);
+            const s2 = Core.getNormalUserEval(user.Email, 2);
+
+            const b1 = document.getElementById('badgeS1');
+            const d1 = document.getElementById('detailS1');
+            const b2 = document.getElementById('badgeS2');
+            const d2 = document.getElementById('detailS2');
+
+            if (s1) {
+                if (b1) { b1.innerHTML = '✅ Evaluada'; b1.style.color = '#2E8B57'; }
+                const stars = (s1.evaluacion || '').split(' ')[0] || '⭐⭐⭐⭐⭐';
+                if (d1) d1.innerHTML = `<span style="color:#C5A059; font-weight:bold;">${stars}</span> • ${s1.fecha || ''} ${s1.requiereRefuerzo ? '<span style="color:#C0392B; font-weight:900;">⚠️ Refuerzo</span>' : ''}<br><span style="color:#1B365D; font-weight:bold; text-decoration:underline;">Ver evaluación</span>`;
+            } else {
+                if (b1) { b1.innerHTML = '⏳ Pendiente'; b1.style.color = '#C5A059'; }
+                if (d1) d1.innerHTML = '<span style="color:#C5A059;">Haz clic para evaluar</span>';
+            }
+
+            if (s2) {
+                if (b2) { b2.innerHTML = '✅ Evaluada'; b2.style.color = '#2E8B57'; }
+                const stars = (s2.evaluacion || '').split(' ')[0] || '⭐⭐⭐⭐⭐';
+                if (d2) d2.innerHTML = `<span style="color:#C5A059; font-weight:bold;">${stars}</span> • ${s2.fecha || ''} ${s2.requiereRefuerzo ? '<span style="color:#C0392B; font-weight:900;">⚠️ Refuerzo</span>' : ''}<br><span style="color:#1B365D; font-weight:bold; text-decoration:underline;">Ver evaluación</span>`;
+            } else {
+                if (b2) { b2.innerHTML = '⏳ Pendiente'; b2.style.color = '#C5A059'; }
+                if (d2) d2.innerHTML = '<span style="color:#C5A059;">Haz clic para evaluar</span>';
+            }
+        }
+
+        // Handler Guardar Evaluación de Alumno
+        const btnSubmitNormalEval = document.getElementById('btnSubmitNormalEval');
+        if (btnSubmitNormalEval) {
+            btnSubmitNormalEval.onclick = async () => {
+                const sessionNum = document.getElementById('evalSessionSelect').value;
+                
+                // BLOQUEO ESTRICTO: Si ya existe evaluación para esta sesión, no permitir
+                const existing = Core.getNormalUserEval(user.Email, sessionNum);
+                if (existing) {
+                    alert(`Esta Sesión (${sessionNum}) ya ha sido evaluada previamente y no puede evaluarse más de una vez.`);
+                    onEvalSessionChanged();
+                    return;
+                }
+
+                const evalSelect = document.getElementById('evalLevelSelect');
+                const evaluacionText = evalSelect.options[evalSelect.selectedIndex].text;
+                const needReinforce = document.getElementById('evalNeedReinforce').checked;
+                const comments = document.getElementById('evalCommentsInput').value.trim();
+
+                btnSubmitNormalEval.disabled = true;
+                btnSubmitNormalEval.innerText = '⏳ Registrando Evaluación...';
+
+                await Core.saveNormalUserEval(
+                    user.Email,
+                    Core.formatName(user),
+                    user['Trainer a Cargo'],
+                    sessionNum,
+                    evaluacionText,
+                    needReinforce,
+                    comments,
+                    evalSelect.value
+                );
+
+                alert(`¡Evaluación de la Sesión ${sessionNum} guardada con éxito! Quedó registrada en Registro2.`);
+                btnSubmitNormalEval.disabled = false;
+                btnSubmitNormalEval.innerText = '📤 Enviar Evaluación y Registrar';
+                closeModal('normalEvalModal');
+                updateAssignedTrainerCardUI(user);
+            };
+        }
+
+        // --- LÓGICA DE RUTA TESTER ---
+        if (hasTester) {
+            renderTesterView(user);
+        }
+
+        // --- LÓGICA DE RUTA TRAINER ---
+        if (hasTrainer) {
+            renderTrainerView(user, allData);
+        }
     });
+
+    // Helper global para alternar vistas de ruta
+    window.switchRouteView = function(view) {
+        document.querySelectorAll('.route-tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById('routeGeneralView').style.display = 'none';
+        document.getElementById('routeTesterView').style.display = 'none';
+        document.getElementById('routeTrainerView').style.display = 'none';
+
+        if (view === 'tester') {
+            document.getElementById('tabTester').classList.add('active');
+            document.getElementById('routeTesterView').style.display = 'block';
+        } else if (view === 'trainer') {
+            document.getElementById('tabTrainer').classList.add('active');
+            document.getElementById('routeTrainerView').style.display = 'block';
+        } else {
+            document.getElementById('tabGeneral').classList.add('active');
+            document.getElementById('routeGeneralView').style.display = 'block';
+        }
+    };
+
+    window.closeModal = function(modalId) {
+        const m = document.getElementById(modalId);
+        if (m) m.style.display = 'none';
+    };
+
+    // Renderizador de Ruta Tester
+    let currentTesterCycleNum = 1;
+    function renderTesterView(user) {
+        const status = Core.getTesterStatus(user.Email);
+        
+        // Barra y porcentaje
+        const progFill = document.getElementById('testerProgFill');
+        const progPct = document.getElementById('testerProgPct');
+        if (progFill) progFill.style.width = status.percent + '%';
+        if (progPct) progPct.innerText = `${status.completedCount}/4 (${status.percent}%)`;
+
+        // 1. Capacitación Tester
+        const cardTraining = document.getElementById('cardTesterTraining');
+        const statusTraining = document.getElementById('statusTesterTraining');
+        const btnTraining = document.getElementById('btnTesterTraining');
+
+        if (status.training) {
+            cardTraining.classList.add('completed');
+            statusTraining.className = 'special-card-status done';
+            statusTraining.innerHTML = `✅ Asistido<br><span style="font-size:9px; color:var(--text-gray);">${status.training.fecha}</span>`;
+            btnTraining.disabled = true;
+            btnTraining.innerText = 'Completado';
+        } else {
+            btnTraining.onclick = async () => {
+                if (confirm('¿Confirmas que has asistido a la Capacitación de Tester?')) {
+                    btnTraining.disabled = true;
+                    btnTraining.innerText = '⏳ Guardando...';
+                    await Core.saveTesterTraining(user.Email, Core.formatName(user));
+                    renderTesterView(user);
+                    alert('¡Asistencia a Capacitación de Tester confirmada y registrada en Registro2!');
+                }
+            };
+        }
+
+        // 2, 3, 4. Ciclos de Pruebas
+        [1, 2, 3].forEach(cycleNum => {
+            const cardCycle = document.getElementById(`cardTesterCycle${cycleNum}`);
+            const statusCycle = document.getElementById(`statusTesterCycle${cycleNum}`);
+            const btnCycle = document.getElementById(`btnTesterCycle${cycleNum}`);
+            const cycleData = status[`cycle${cycleNum}`];
+
+            if (cycleData) {
+                cardCycle.classList.add('completed');
+                statusCycle.className = 'special-card-status done';
+                statusCycle.innerHTML = `✅ Entregado<br><span style="font-size:9px; color:var(--text-gray);">${cycleData.fecha}<br>${cycleData.fileName ? '📎 ' + cycleData.fileName : ''}</span>`;
+                btnCycle.innerText = 'Reenviar Planilla';
+            }
+
+            btnCycle.onclick = () => {
+                currentTesterCycleNum = cycleNum;
+                document.getElementById('testerModalTitle').innerText = `Entrega de Planilla: Ciclo ${cycleNum} de Pruebas`;
+                document.getElementById('testerFileInput').value = '';
+                document.getElementById('testerNotesInput').value = '';
+                document.getElementById('testerUploadModal').style.display = 'flex';
+            };
+        });
+
+        // Configurar botón de envío de ciclo en modal
+        const btnSubmitTester = document.getElementById('btnSubmitTesterCycle');
+        btnSubmitTester.onclick = async () => {
+            const fileInput = document.getElementById('testerFileInput');
+            const file = fileInput.files[0];
+            if (!file) {
+                return alert('Por favor, selecciona el archivo de la planilla antes de enviar.');
+            }
+            const notes = document.getElementById('testerNotesInput').value.trim();
+
+            btnSubmitTester.disabled = true;
+            btnSubmitTester.innerText = '⏳ Enviando Planilla por Correo...';
+
+            try {
+                await Core.saveTesterCycle(user.Email, Core.formatName(user), currentTesterCycleNum, file, notes);
+                alert(`¡Planilla del Ciclo ${currentTesterCycleNum} enviada con éxito por correo a gsalinas@pjportland.cl y a ${user.Email}! Fecha registrada en Registro2.`);
+                closeModal('testerUploadModal');
+                renderTesterView(user);
+            } catch (err) {
+                console.error(err);
+                alert('Ocurrió un error al procesar el archivo. Inténtalo nuevamente.');
+            } finally {
+                btnSubmitTester.disabled = false;
+                btnSubmitTester.innerText = '📤 Enviar Planilla por Correo y Registrar';
+            }
+        };
+    }
+
+    // Renderizador de Ruta Trainer
+    let currentTrainerSessionNum = 1;
+    function renderTrainerView(user, allData) {
+        const status = Core.getTrainerStatus(user.Email, allData);
+
+        const progFill = document.getElementById('trainerProgFill');
+        const progPct = document.getElementById('trainerProgPct');
+        if (progFill) progFill.style.width = status.percent + '%';
+        if (progPct) progPct.innerText = `${status.sessionCount}/2 (${status.percent}%)`;
+
+        // Sesión 1 y Sesión 2
+        [1, 2].forEach(sNum => {
+            const cardS = document.getElementById(`cardTrainerS${sNum}`);
+            const statusS = document.getElementById(`statusTrainerS${sNum}`);
+            const btnS = document.getElementById(`btnTrainerS${sNum}`);
+            const sData = status[`session${sNum}`];
+
+            if (sData) {
+                cardS.classList.add('completed');
+                statusS.className = 'special-card-status done';
+                statusS.innerHTML = `✅ Realizada<br><span style="font-size:9px; color:var(--text-gray);">${sData.fecha}<br>Tema: ${sData.tema}</span>`;
+                btnS.innerText = 'Modificar';
+            }
+
+            btnS.onclick = () => {
+                currentTrainerSessionNum = sNum;
+                document.getElementById('trainerModalTitle').innerText = `Registro de Sesión ${sNum} de Capacitación`;
+                document.getElementById('trainerTopicInput').value = sData ? sData.tema : '';
+                document.getElementById('trainerNotesInput').value = sData ? sData.observaciones : '';
+                document.getElementById('trainerSessionModal').style.display = 'flex';
+            };
+        });
+
+        // Configurar botón guardar sesión modal
+        const btnSubmitSession = document.getElementById('btnSubmitTrainerSession');
+        btnSubmitSession.onclick = async () => {
+            const topic = document.getElementById('trainerTopicInput').value.trim();
+            if (!topic) return alert('Por favor, ingresa el tema tratado en la sesión.');
+            const notes = document.getElementById('trainerNotesInput').value.trim();
+
+            btnSubmitSession.disabled = true;
+            btnSubmitSession.innerText = '⏳ Guardando...';
+
+            await Core.saveTrainerSession(user.Email, Core.formatName(user), currentTrainerSessionNum, topic, notes);
+            alert(`¡Sesión ${currentTrainerSessionNum} registrada con éxito en Registro2!`);
+            closeModal('trainerSessionModal');
+            renderTrainerView(user, allData);
+            btnSubmitSession.disabled = false;
+            btnSubmitSession.innerText = '💾 Guardar Registro de Sesión';
+        };
+
+        // Renderizar alumnos asignados
+        const studentCount = document.getElementById('trainerStudentCount');
+        const studentList = document.getElementById('trainerStudentList');
+
+        if (studentCount) studentCount.innerText = `${status.assignedUsers.length} asignados`;
+
+        if (studentList) {
+            if (status.assignedUsers.length === 0) {
+                studentList.innerHTML = '<p style="font-size:11px; color:var(--text-gray); padding:5px 0;">No tienes tripulantes asignados con tu correo en la columna "Trainer a Cargo".</p>';
+            } else {
+                studentList.innerHTML = status.assignedUsers.map(st => {
+                    const e1 = st.eval1;
+                    const e2 = st.eval2;
+                    const needsHelp = (e1 && e1.requiereRefuerzo) || (e2 && e2.requiereRefuerzo);
+                    return `
+                        <div style="border-bottom:1px solid #EEE; padding:6px 0; font-size:11px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <strong style="color:var(--navy-dark);">${Core.formatName(st.user)}</strong>
+                                ${needsHelp ? '<span style="background:#FFE4E1; color:#C0392B; padding:2px 6px; border-radius:10px; font-size:9px; font-weight:900;">⚠️ Requiere Refuerzo</span>' : ''}
+                            </div>
+                            <div style="font-size:10px; color:var(--text-gray); margin-top:2px;">
+                                S1: ${e1 ? e1.evaluacion : '<span style="color:#C5A059;">Pendiente</span>'} | 
+                                S2: ${e2 ? e2.evaluacion : '<span style="color:#C5A059;">Pendiente</span>'}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+    }
 </script>
 
 </body>

@@ -1,21 +1,17 @@
 /**
  * CORE.JS - RUTA DEL CAMBIO PORTLAND
  * Centraliza la carga de datos, gestión de sesión y lógica de roles.
+ * Seguridad: La información de usuarios reside exclusivamente en el backend de Google Apps Script.
  */
 
-const CSV_PATH = './Avance_RUTA.csv';
-
-/**
- * Formatea el nombre de manera estandarizada con su alias.
- * Ejemplo: Leandro "Delfín" Jara
- */
+const PORTLAND_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxcp3HlO-f4tK8h5pcQMaBPqecOAH-4UY2lfRcUkEl8oSQYTPqKyoHWm5ksop3EMRKKmQ/exec';
 
 /**
  * Formatea el nombre de manera estandarizada (Solo Nombre y Apellido).
  */
 function formatName(user) {
     if (!user) return '---';
-    return user['Nombre Tripultante'] || 'Sin Nombre';
+    return user['Nombre Tripulante'] || user['Nombre Tripultante'] || 'Sin Nombre';
 }
 
 /**
@@ -24,7 +20,7 @@ function formatName(user) {
  */
 function formatGreeting(user) {
     if (!user) return '---';
-    const fullName = user['Nombre Tripultante'] || '';
+    const fullName = user['Nombre Tripulante'] || user['Nombre Tripultante'] || '';
     const profile = getProfile();
     const alias = (profile && profile.aliasUsuario) ? profile.aliasUsuario : '';
 
@@ -50,24 +46,80 @@ function getFlag(country) {
 }
 
 /**
- * Carga el archivo CSV y lo parsea a un Array de Objetos JSON.
+ * Consulta segura al backend de Google Apps Script para validar e identificar un usuario en Login.
+ * NO descarga la base de usuarios completa en el navegador; solo recupera la ficha del tripulante autenticado.
  */
-async function loadAppData() {
+async function getUserFromBackend(email) {
+    if (!email) return { success: false, error: 'Email requerido' };
     try {
-        const response = await fetch(CSV_PATH + '?t=' + Date.now());
-        if (!response.ok) throw new Error('No se pudo cargar el archivo de datos.');
-        const csvText = await response.text();
-        const data = parseCSV(csvText);
+        const cleanEmail = email.trim().toLowerCase();
+        const url = `${PORTLAND_WEBHOOK_URL}?action=getUser&email=${encodeURIComponent(cleanEmail)}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('No se pudo conectar a la bitácora de navegación.');
+        const data = await res.json();
+        return data;
+    } catch (err) {
+        console.error('Error al consultar usuario en backend:', err);
+        return { success: false, error: err.message };
+    }
+}
+
+/**
+ * Carga los datos protegidos desde Google Apps Script según la sesión activa y el rol del usuario.
+ * Utiliza almacenamiento en caché (sessionStorage) para una navegación ultra rápida entre páginas.
+ */
+async function loadAppData(forceRefresh = false) {
+    try {
+        const sessionUserStr = localStorage.getItem('portland_user');
+        if (!sessionUserStr) return [];
+        const sessionUser = JSON.parse(sessionUserStr);
+        const email = (sessionUser.Email || '').toLowerCase().trim();
+        if (!email) return [];
+
+        // Detectar si estamos en modo "viewAs" (ej: Almirante viendo panel de un Capitán)
+        const urlParams = new URLSearchParams(window.location.search);
+        const viewAs = urlParams.get('viewAs') || '';
+
+        const cacheKey = `portland_appdata_${email}_${viewAs}`;
         
+        // Si no se fuerza refresco, intentar recuperar de caché de sesión para respuesta instantánea
+        if (!forceRefresh) {
+            const cached = sessionStorage.getItem(cacheKey);
+            if (cached) {
+                try {
+                    const cachedData = JSON.parse(cached);
+                    if (Array.isArray(cachedData) && cachedData.length > 0) {
+                        return cachedData;
+                    }
+                } catch (e) {}
+            }
+        }
+
+        const url = `${PORTLAND_WEBHOOK_URL}?action=getAppData&email=${encodeURIComponent(email)}${viewAs ? '&viewAs=' + encodeURIComponent(viewAs) : ''}`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('No se pudo conectar al libro de navegación en Google Apps Script.');
+        const result = await response.json();
+
+        if (!result.success || !Array.isArray(result.users)) {
+            throw new Error(result.error || 'Respuesta inválida del servidor');
+        }
+
+        const data = result.users;
+
         // Normalizar estados de visa y sincronizar memoria local
         const visas = ['Visa de Zarpe', 'Visa de Navegacion', 'Visa de Aduanas', 'Visa de Descarga', 'Visa de Transito'];
         data.forEach(user => {
-            // Normalizar a "Si" si viene como "SI", "si", "Si" en el CSV
+            // Normalizar a "Si" si viene como "SI", "si", "Si"
             visas.forEach(visa => {
-                if (user[visa] && user[visa].toLowerCase() === 'si') {
+                if (user[visa] && user[visa].toString().toLowerCase() === 'si') {
                     user[visa] = 'Si';
                 }
             });
+
+            // Normalizar roles especiales
+            user.Tester = (user.Tester && user.Tester.trim().toUpperCase() === 'SI') ? 'SI' : 'NO';
+            user.Trainer = (user.Trainer && user.Trainer.trim().toUpperCase() === 'SI') ? 'SI' : 'NO';
+            user['Trainer a Cargo'] = (user['Trainer a Cargo'] || '').trim();
 
             if (localStorage.getItem('portland_visa1_accepted_' + user.Email)) {
                 user['Visa de Zarpe'] = 'Si';
@@ -75,42 +127,22 @@ async function loadAppData() {
         });
 
         // REFRESCAR SESIÓN: Si hay un usuario logueado, actualizamos su objeto en localStorage 
-        // con los datos frescos (incluyendo el parche de la visa que acabamos de aplicar arriba)
-        const sessionUserStr = localStorage.getItem('portland_user');
-        if (sessionUserStr) {
-            const sessionUser = JSON.parse(sessionUserStr);
-            const freshUser = data.find(u => u.Email.toLowerCase() === sessionUser.Email.toLowerCase());
-            if (freshUser) {
-                localStorage.setItem('portland_user', JSON.stringify(freshUser));
-            }
+        const freshUser = data.find(u => (u.Email || '').toLowerCase() === email);
+        if (freshUser) {
+            localStorage.setItem('portland_user', JSON.stringify(freshUser));
         }
         
+        // Guardar en caché de sesión para rapidez de navegación
+        try {
+            sessionStorage.setItem(cacheKey, JSON.stringify(data));
+        } catch (e) {}
+
         return data;
     } catch (error) {
-        console.error('Error al cargar datos:', error);
-        return [];
+        console.error('Error al cargar datos desde Apps Script:', error);
+        const sessionUserStr = localStorage.getItem('portland_user');
+        return sessionUserStr ? [JSON.parse(sessionUserStr)] : [];
     }
-}
-
-/**
- * Parsea un CSV con punto y coma (;) como separador.
- */
-function parseCSV(csv) {
-    const lines = csv.trim().split('\n');
-    if (lines.length < 2) return [];
-    
-    const headers = lines[0].split(';').map(h => h.trim());
-    const data = [];
-
-    for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(';');
-        const entry = {};
-        headers.forEach((header, index) => {
-            entry[header] = values[index] ? values[index].trim() : '';
-        });
-        data.push(entry);
-    }
-    return data;
 }
 
 /**
@@ -322,9 +354,273 @@ function getTransitiveSubordinates(email, allData) {
     return unique;
 }
 
+/**
+ * ============================================================================
+ * RUTAS ESPECIALES: TESTER, TRAINER Y EVALUACIÓN DE USUARIOS NORMALES
+ * ============================================================================
+ */
+
+function isTester(user) {
+    return !!(user && user.Tester && user.Tester.toUpperCase() === 'SI');
+}
+
+function isTrainer(user) {
+    return !!(user && user.Trainer && user.Trainer.toUpperCase() === 'SI');
+}
+
+function getTrainerForUser(user, allData) {
+    if (!user || !user['Trainer a Cargo'] || !allData) return null;
+    const trainerEmail = user['Trainer a Cargo'].trim().toLowerCase();
+    return allData.find(u => (u.Email || '').trim().toLowerCase() === trainerEmail) || null;
+}
+
+function getAssignedUsersForTrainer(trainerEmail, allData) {
+    if (!trainerEmail || !allData) return [];
+    const tEmail = trainerEmail.trim().toLowerCase();
+    return allData.filter(u => (u['Trainer a Cargo'] || '').trim().toLowerCase() === tEmail);
+}
+
+/**
+ * Envío asíncrono a Google Apps Script Webhook (Registro2 / Emails)
+ */
+async function sendWebhookEvent(payload) {
+    try {
+        await fetch(PORTLAND_WEBHOOK_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        return { success: true };
+    } catch (err) {
+        console.warn('Advertencia al enviar al webhook (se mantendrá en memoria local):', err);
+        return { success: false, error: err };
+    }
+}
+
+/**
+ * Guarda la confirmación de asistencia a la capacitación de Tester
+ */
+async function saveTesterTraining(email, nombre) {
+    const key = 'portland_tester_training_' + email.toLowerCase().trim();
+    const now = new Date();
+    const fecha = now.toLocaleDateString('es-CL') + ' ' + now.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+    const record = { fecha, timestamp: Date.now() };
+    localStorage.setItem(key, JSON.stringify(record));
+
+    // Envío en segundo plano al Webhook para Registro2
+    sendWebhookEvent({
+        action: 'TESTER_CAPACITACION',
+        email: email,
+        nombre: nombre,
+        rol: 'Tester',
+        detalle: 'Capacitación de Tester Asistida',
+        observaciones: 'Asistencia confirmada por el tripulante en la plataforma'
+    });
+
+    return record;
+}
+
+/**
+ * Guarda la entrega de un Ciclo de Test con su archivo y observaciones.
+ * Envía la planilla vía Webhook por correo a gsalinas@pjportland.cl y al usuario.
+ */
+async function saveTesterCycle(email, nombre, cycleNum, file, observaciones = '') {
+    const key = `portland_tester_cycle_${cycleNum}_` + email.toLowerCase().trim();
+    const now = new Date();
+    const fecha = now.toLocaleDateString('es-CL') + ' ' + now.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+
+    // Convertir archivo a Base64 si viene presente
+    let fileBase64 = null;
+    let fileName = '';
+    let fileMimeType = '';
+
+    if (file) {
+        fileName = file.name;
+        fileMimeType = file.type || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        fileBase64 = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                // Extraer únicamente la cadena base64 después de la coma
+                const result = reader.result;
+                const base64Index = result.indexOf(',') + 1;
+                resolve(result.substring(base64Index));
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    const record = {
+        fecha,
+        fileName,
+        observaciones,
+        timestamp: Date.now()
+    };
+    localStorage.setItem(key, JSON.stringify(record));
+
+    // Notificar al Webhook (dispara correo a gsalinas@pjportland.cl y respaldo al usuario)
+    await sendWebhookEvent({
+        action: `TESTER_CICLO_${cycleNum}`,
+        email: email,
+        nombre: nombre,
+        rol: 'Tester',
+        detalle: `Ciclo ${cycleNum} de Pruebas`,
+        fileName: fileName,
+        fileMimeType: fileMimeType,
+        fileBase64: fileBase64,
+        observaciones: observaciones
+    });
+
+    return record;
+}
+
+/**
+ * Obtiene el estado consolidado de la Ruta de Tester para un email
+ */
+function getTesterStatus(email) {
+    if (!email) return { training: null, cycle1: null, cycle2: null, cycle3: null, completedCount: 0, percent: 0 };
+    const e = email.toLowerCase().trim();
+    const trainingStr = localStorage.getItem('portland_tester_training_' + e);
+    const cycle1Str = localStorage.getItem('portland_tester_cycle_1_' + e);
+    const cycle2Str = localStorage.getItem('portland_tester_cycle_2_' + e);
+    const cycle3Str = localStorage.getItem('portland_tester_cycle_3_' + e);
+
+    const training = trainingStr ? JSON.parse(trainingStr) : null;
+    const cycle1 = cycle1Str ? JSON.parse(cycle1Str) : null;
+    const cycle2 = cycle2Str ? JSON.parse(cycle2Str) : null;
+    const cycle3 = cycle3Str ? JSON.parse(cycle3Str) : null;
+
+    let completed = 0;
+    if (training) completed++;
+    if (cycle1) completed++;
+    if (cycle2) completed++;
+    if (cycle3) completed++;
+
+    return {
+        training,
+        cycle1,
+        cycle2,
+        cycle3,
+        completedCount: completed,
+        totalMilestones: 4,
+        percent: Math.round((completed / 4) * 100)
+    };
+}
+
+/**
+ * Guarda el registro de una Sesión impartida por el Trainer
+ */
+async function saveTrainerSession(email, nombre, sessionNum, tema, observaciones = '') {
+    const key = `portland_trainer_session_${sessionNum}_` + email.toLowerCase().trim();
+    const now = new Date();
+    const fecha = now.toLocaleDateString('es-CL') + ' ' + now.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+
+    const record = {
+        sessionNum,
+        tema,
+        observaciones,
+        fecha,
+        timestamp: Date.now()
+    };
+    localStorage.setItem(key, JSON.stringify(record));
+
+    await sendWebhookEvent({
+        action: `TRAINER_SESION_${sessionNum}`,
+        email: email,
+        nombre: nombre,
+        rol: 'Trainer',
+        detalle: `Sesión ${sessionNum}: ${tema}`,
+        observaciones: observaciones
+    });
+
+    return record;
+}
+
+/**
+ * Obtiene el estado del Trainer (sesiones impartidas y alumnos a cargo con sus evaluaciones)
+ */
+function getTrainerStatus(email, allData) {
+    if (!email) return { session1: null, session2: null, sessionCount: 0, assignedUsers: [] };
+    const e = email.toLowerCase().trim();
+    const s1Str = localStorage.getItem('portland_trainer_session_1_' + e);
+    const s2Str = localStorage.getItem('portland_trainer_session_2_' + e);
+
+    const session1 = s1Str ? JSON.parse(s1Str) : null;
+    const session2 = s2Str ? JSON.parse(s2Str) : null;
+
+    let sessionCount = 0;
+    if (session1) sessionCount++;
+    if (session2) sessionCount++;
+
+    const assignedUsers = getAssignedUsersForTrainer(e, allData).map(u => {
+        const uEmail = u.Email.toLowerCase().trim();
+        const eval1Str = localStorage.getItem('portland_normal_eval_1_' + uEmail);
+        const eval2Str = localStorage.getItem('portland_normal_eval_2_' + uEmail);
+        return {
+            user: u,
+            eval1: eval1Str ? JSON.parse(eval1Str) : null,
+            eval2: eval2Str ? JSON.parse(eval2Str) : null
+        };
+    });
+
+    return {
+        session1,
+        session2,
+        sessionCount,
+        percent: Math.round((sessionCount / 2) * 100),
+        assignedUsers
+    };
+}
+
+/**
+ * Guarda la evaluación del Usuario Normal sobre la sesión de su Trainer
+ */
+async function saveNormalUserEval(email, nombre, trainerEmail, sessionNum, evaluacion, requiereRefuerzo, observaciones = '', nivel = '') {
+    const key = `portland_normal_eval_${sessionNum}_` + email.toLowerCase().trim();
+    const now = new Date();
+    const fecha = now.toLocaleDateString('es-CL') + ' ' + now.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+
+    const record = {
+        sessionNum,
+        trainerEmail,
+        evaluacion,
+        nivel: nivel || '',
+        requiereRefuerzo: !!requiereRefuerzo,
+        observaciones,
+        fecha,
+        timestamp: Date.now()
+    };
+    localStorage.setItem(key, JSON.stringify(record));
+
+    await sendWebhookEvent({
+        action: 'NORMAL_EVAL_TRAINING',
+        email: email,
+        nombre: nombre,
+        rol: 'Tripulante',
+        trainerEmail: trainerEmail,
+        detalle: `Evaluación Sesión ${sessionNum} con Trainer: ${trainerEmail}`,
+        evaluacion: evaluacion,
+        requiereRefuerzo: !!requiereRefuerzo,
+        observaciones: observaciones
+    });
+
+    return record;
+}
+
+function getNormalUserEval(email, sessionNum) {
+    if (!email) return null;
+    const key = `portland_normal_eval_${sessionNum}_` + email.toLowerCase().trim();
+    const str = localStorage.getItem(key);
+    return str ? JSON.parse(str) : null;
+}
+
 // Exportar globalmente
 window.Core = {
     loadAppData,
+    getUserFromBackend,
     getUserRole,
     saveSession,
     checkSession,
@@ -337,5 +633,20 @@ window.Core = {
     getDaysToGoLive,
     saveProfile,
     getProfile,
-    getTransitiveSubordinates
+    getTransitiveSubordinates,
+    // Nuevos métodos para Rutas Especiales
+    WEBHOOK_URL: PORTLAND_WEBHOOK_URL,
+    isTester,
+    isTrainer,
+    getTrainerForUser,
+    getAssignedUsersForTrainer,
+    sendWebhookEvent,
+    saveTesterTraining,
+    saveTesterCycle,
+    getTesterStatus,
+    saveTrainerSession,
+    getTrainerStatus,
+    saveNormalUserEval,
+    getNormalUserEval
 };
+

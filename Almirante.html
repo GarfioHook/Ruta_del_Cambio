@@ -361,6 +361,32 @@
         }
         .btn-save-profile:active { transform: translateY(2px); }
 
+        /* Badges de Rol Especial */
+        .role-badge {
+            display: inline-block; padding: 2px 5px; border-radius: 4px;
+            font-size: 8px; font-weight: 900; margin-left: 4px; letter-spacing: 0.5px;
+            vertical-align: middle;
+        }
+        .badge-tester {
+            background: #E8F4FD; color: #1B365D; border: 1px solid #1B365D;
+        }
+        .badge-trainer {
+            background: #E8F8F0; color: #2E8B57; border: 1px solid #2E8B57;
+        }
+
+        /* Pestañas de Almirante */
+        .captain-tab-btn {
+            background: #E8E2D2; border: 1px solid var(--silver); border-radius: 6px;
+            padding: 7px 12px; font-size: 11px; font-weight: 900; color: var(--navy-dark);
+            cursor: pointer; transition: 0.2s; font-family: 'Lato', sans-serif; text-transform: uppercase;
+        }
+        .captain-tab-btn:hover { background: #fff; border-color: var(--gold-primary); }
+        .captain-tab-btn.active {
+            background: linear-gradient(180deg, var(--gold-light), var(--gold-primary));
+            color: var(--navy-dark); border-color: var(--navy-dark);
+            box-shadow: 0 2px 5px rgba(15,32,53,0.15);
+        }
+
     </style>
 </head>
 <body>
@@ -397,13 +423,37 @@
         </div>
     </header>
 
-    <!-- TABLA PRINCIPAL GRID -->
+    <!-- TABLA PRINCIPAL GRID CON PESTAÑAS -->
     <div class="odyssey-panel main-panel">
         <div class="rivet r-tl"></div><div class="rivet r-tr"></div><div class="rivet r-bl"></div><div class="rivet r-br"></div>
-        <div class="table-scroll-wrapper">
+        
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px; border-bottom:1px solid var(--silver); padding-bottom:10px;">
+            <div class="panel-title serif-text" style="margin:0; border:none; padding:0;">Cuadro de Mando de la Flota</div>
+            <div style="display:flex; gap:8px;">
+                <button class="captain-tab-btn active" id="admTabGeneral" onclick="switchAdmiralTab('general')">🗺️ Equipos y Capitanes</button>
+                <button class="captain-tab-btn" id="admTabTesters" onclick="switchAdmiralTab('testers')">🧪 Testers Flota (<span id="admCountTesters">0</span>)</button>
+                <button class="captain-tab-btn" id="admTabTrainers" onclick="switchAdmiralTab('trainers')">🎓 Trainers Flota (<span id="admCountTrainers">0</span>)</button>
+            </div>
+        </div>
+
+        <!-- VISTA GENERAL: EQUIPOS -->
+        <div class="table-scroll-wrapper" id="admGeneralWrapper">
             <div class="grid-table" id="admiralTableGrid">
-                <!-- El contenido de la tabla se inyectará por JS -->
                 <p style="text-align: center; color: var(--text-gray); grid-column: span 8; padding: 20px;">Calculando rutas estelares...</p>
+            </div>
+        </div>
+
+        <!-- VISTA TESTERS FLOTA -->
+        <div class="table-scroll-wrapper" id="admTestersWrapper" style="display:none;">
+            <div class="grid-table" id="admiralTestersGrid" style="grid-template-columns: 240px 180px repeat(4, minmax(110px, 1fr)) 100px;">
+                <p style="text-align: center; color: var(--text-gray); grid-column: span 7; padding: 20px;">Cargando Testers de la flota...</p>
+            </div>
+        </div>
+
+        <!-- VISTA TRAINERS FLOTA -->
+        <div class="table-scroll-wrapper" id="admTrainersWrapper" style="display:none;">
+            <div class="grid-table" id="admiralTrainersGrid" style="grid-template-columns: 240px 180px minmax(120px, 1fr) minmax(120px, 1fr) minmax(140px, 1fr) minmax(160px, 1fr);">
+                <p style="text-align: center; color: var(--text-gray); grid-column: span 6; padding: 20px;">Cargando Trainers de la flota...</p>
             </div>
         </div>
     </div>
@@ -420,13 +470,21 @@
                 <div class="summary-prog-text" id="globalProgressText" style="font-size: 28px;">0%</div>
             </div>
             
-            <div class="resumen-bottom">
+            <div class="resumen-bottom" style="grid-template-columns: repeat(4, 1fr);">
                 <div class="sub-stat">
-                    <div class="sub-stat-title">TRIPULANTES ACTIVOS</div>
+                    <div class="sub-stat-title">TRIPULACIÓN TOTAL</div>
                     <div class="sub-stat-val" id="activeCrewCount">0</div>
                 </div>
                 <div class="sub-stat">
-                    <div class="sub-stat-title">DÍAS PARA LLEGAR A ÍTACA</div>
+                    <div class="sub-stat-title">TESTERS FLOTA</div>
+                    <div class="sub-stat-val" id="admStatsTesters" style="color:#1B365D;">0</div>
+                </div>
+                <div class="sub-stat">
+                    <div class="sub-stat-title">TRAINERS FLOTA</div>
+                    <div class="sub-stat-val" id="admStatsTrainers" style="color:#2E8B57;">0</div>
+                </div>
+                <div class="sub-stat">
+                    <div class="sub-stat-title">DÍAS A ÍTACA</div>
                     <div class="sub-stat-val" id="daysToGoLive">180</div>
                 </div>
             </div>
@@ -623,7 +681,11 @@
                         <div class="crew-avatar"><span style="color:var(--silver); font-size:18px;">${report['Rango'] === 'Tripulante' ? '🧔' : '⚓'}</span></div>
                         <div class="crew-info">
                             <span class="crew-name">${Core.formatName(report)}</span>
-                            <span class="crew-role">${report['Rango']}</span>
+                            <span class="crew-role">
+                                ${report['Rango']}
+                                ${Core.isTester(report) ? '<span class="role-badge badge-tester">TESTER</span>' : ''}
+                                ${Core.isTrainer(report) ? '<span class="role-badge badge-trainer">TRAINER</span>' : ''}
+                            </span>
                         </div>
                         ${isClickable ? '<span class="click-hint">▶</span>' : ''}
                     </div>
@@ -688,14 +750,173 @@
             table.innerHTML = '<p style="text-align: center; color: var(--text-gray); grid-column: span 8; padding: 20px;">No se encontraron reportes directos para su mando.</p>';
         }
 
-        // 4. Progreso Global (Filtrado por Flota)
+        // =====================================================================
+        // 4. GENERAR TABLAS DE TESTERS Y TRAINERS DE LA FLOTA
+        // =====================================================================
+        const fleetTesters = myFleet.filter(u => Core.isTester(u));
+        const fleetTrainers = myFleet.filter(u => Core.isTrainer(u));
+
+        const countTestersEl = document.getElementById('admCountTesters');
+        const statsTestersEl = document.getElementById('admStatsTesters');
+        const countTrainersEl = document.getElementById('admCountTrainers');
+        const statsTrainersEl = document.getElementById('admStatsTrainers');
+
+        if (countTestersEl) countTestersEl.innerText = fleetTesters.length;
+        if (statsTestersEl) statsTestersEl.innerText = fleetTesters.length;
+        if (countTrainersEl) countTrainersEl.innerText = fleetTrainers.length;
+        if (statsTrainersEl) statsTrainersEl.innerText = fleetTrainers.length;
+
+        // Tabla Testers Flota
+        const admTestersTable = document.getElementById('admiralTestersGrid');
+        if (admTestersTable) {
+            if (fleetTesters.length === 0) {
+                admTestersTable.innerHTML = '<p style="text-align:center; color:var(--text-gray); grid-column:span 7; padding:25px;">No hay tripulantes con rol Tester en tu flota.</p>';
+            } else {
+                let tHtml = `
+                    <div class="cell header-cell header-gray">TESTER</div>
+                    <div class="cell header-cell">CAPITÁN A CARGO</div>
+                    <div class="cell header-cell">CAPACITACIÓN</div>
+                    <div class="cell header-cell">CICLO 1</div>
+                    <div class="cell header-cell">CICLO 2</div>
+                    <div class="cell header-cell">CICLO 3</div>
+                    <div class="cell header-cell">% AVANCE</div>
+                `;
+
+                fleetTesters.forEach(tester => {
+                    const st = Core.getTesterStatus(tester.Email);
+                    const capUser = allData.find(u => (u.Email || '').toLowerCase() === (tester['Capitan a Cargo'] || '').toLowerCase());
+                    const capName = capUser ? Core.formatName(capUser) : (tester['Capitan a Cargo'] || '---');
+
+                    tHtml += `
+                        <div class="cell crew-cell">
+                            <div class="crew-avatar"><span>🧪</span></div>
+                            <div class="crew-info">
+                                <span class="crew-name">${Core.formatName(tester)}</span>
+                                <span class="crew-role">${tester.Email}</span>
+                            </div>
+                        </div>
+
+                        <div class="cell trip-cell" style="text-align:center; justify-content:center;">
+                            <span style="font-size:12px; font-weight:800; color:var(--navy-dark);">${capName}</span>
+                            <span style="font-size:9px; color:var(--text-gray);">${tester['Bandera'] || ''}</span>
+                        </div>
+
+                        <div class="cell visa-cell" style="padding:10px; text-align:center;">
+                            ${st.training 
+                                ? `<span style="font-size:18px;">✅</span><span style="font-size:10px; font-weight:900; color:#2E8B57;">Asistido</span><span style="font-size:9px; color:var(--text-gray);">${st.training.fecha}</span>` 
+                                : `<span style="font-size:18px; opacity:0.4;">⏳</span><span style="font-size:10px; color:var(--text-gray);">Pendiente</span>`
+                            }
+                        </div>
+
+                        <div class="cell visa-cell" style="padding:10px; text-align:center;">
+                            ${st.cycle1 
+                                ? `<span style="font-size:18px;">📋</span><span style="font-size:10px; font-weight:900; color:#2E8B57;">Entregado</span><span style="font-size:9px; color:var(--text-gray);">${st.cycle1.fecha}</span>${st.cycle1.fileName ? `<span style="font-size:8px; color:var(--gold-primary); text-overflow:ellipsis; overflow:hidden; max-width:90px; white-space:nowrap;">📎 ${st.cycle1.fileName}</span>` : ''}` 
+                                : `<span style="font-size:18px; opacity:0.4;">⏳</span><span style="font-size:10px; color:var(--text-gray);">Pendiente</span>`
+                            }
+                        </div>
+
+                        <div class="cell visa-cell" style="padding:10px; text-align:center;">
+                            ${st.cycle2 
+                                ? `<span style="font-size:18px;">📋</span><span style="font-size:10px; font-weight:900; color:#2E8B57;">Entregado</span><span style="font-size:9px; color:var(--text-gray);">${st.cycle2.fecha}</span>${st.cycle2.fileName ? `<span style="font-size:8px; color:var(--gold-primary); text-overflow:ellipsis; overflow:hidden; max-width:90px; white-space:nowrap;">📎 ${st.cycle2.fileName}</span>` : ''}` 
+                                : `<span style="font-size:18px; opacity:0.4;">⏳</span><span style="font-size:10px; color:var(--text-gray);">Pendiente</span>`
+                            }
+                        </div>
+
+                        <div class="cell visa-cell" style="padding:10px; text-align:center;">
+                            ${st.cycle3 
+                                ? `<span style="font-size:18px;">📋</span><span style="font-size:10px; font-weight:900; color:#2E8B57;">Entregado</span><span style="font-size:9px; color:var(--text-gray);">${st.cycle3.fecha}</span>${st.cycle3.fileName ? `<span style="font-size:8px; color:var(--gold-primary); text-overflow:ellipsis; overflow:hidden; max-width:90px; white-space:nowrap;">📎 ${st.cycle3.fileName}</span>` : ''}` 
+                                : `<span style="font-size:18px; opacity:0.4;">⏳</span><span style="font-size:10px; color:var(--text-gray);">Pendiente</span>`
+                            }
+                        </div>
+
+                        <div class="cell visa-cell" style="padding:10px; text-align:center; justify-content:center;">
+                            <span style="font-size:15px; font-weight:900; color:${st.percent === 100 ? '#2E8B57' : 'var(--gold-primary)'};">${st.percent}%</span>
+                            <span style="font-size:9px; color:var(--text-gray);">${st.completedCount}/4 Hitos</span>
+                        </div>
+                    `;
+                });
+                admTestersTable.innerHTML = tHtml;
+            }
+        }
+
+        // Tabla Trainers Flota
+        const admTrainersTable = document.getElementById('admiralTrainersGrid');
+        if (admTrainersTable) {
+            if (fleetTrainers.length === 0) {
+                admTrainersTable.innerHTML = '<p style="text-align:center; color:var(--text-gray); grid-column:span 6; padding:25px;">No hay tripulantes con rol Trainer en tu flota.</p>';
+            } else {
+                let trHtml = `
+                    <div class="cell header-cell header-gray">INSTRUCTOR TRAINER</div>
+                    <div class="cell header-cell">CAPITÁN A CARGO</div>
+                    <div class="cell header-cell">SESIÓN 1 (MÍNIMO)</div>
+                    <div class="cell header-cell">SESIÓN 2 (MÍNIMO)</div>
+                    <div class="cell header-cell">ALUMNOS DESIGNADOS</div>
+                    <div class="cell header-cell">ALERTAS DE REFUERZO</div>
+                `;
+
+                fleetTrainers.forEach(trainer => {
+                    const st = Core.getTrainerStatus(trainer.Email, allData);
+                    const capUser = allData.find(u => (u.Email || '').toLowerCase() === (trainer['Capitan a Cargo'] || '').toLowerCase());
+                    const capName = capUser ? Core.formatName(capUser) : (trainer['Capitan a Cargo'] || '---');
+
+                    const studentsNeedingHelp = st.assignedUsers.filter(u => 
+                        (u.eval1 && u.eval1.requiereRefuerzo) || (u.eval2 && u.eval2.requiereRefuerzo)
+                    );
+
+                    trHtml += `
+                        <div class="cell crew-cell">
+                            <div class="crew-avatar"><span>🎓</span></div>
+                            <div class="crew-info">
+                                <span class="crew-name">${Core.formatName(trainer)}</span>
+                                <span class="crew-role">${trainer.Email}</span>
+                            </div>
+                        </div>
+
+                        <div class="cell trip-cell" style="text-align:center; justify-content:center;">
+                            <span style="font-size:12px; font-weight:800; color:var(--navy-dark);">${capName}</span>
+                            <span style="font-size:9px; color:var(--text-gray);">${trainer['Bandera'] || ''}</span>
+                        </div>
+
+                        <div class="cell visa-cell" style="padding:10px; text-align:center;">
+                            ${st.session1 
+                                ? `<span style="font-size:18px;">🎯</span><span style="font-size:10px; font-weight:900; color:#2E8B57;">Realizada</span><span style="font-size:9px; color:var(--text-gray);">${st.session1.fecha}</span><span style="font-size:8px; color:var(--navy-dark);">${st.session1.tema}</span>` 
+                                : `<span style="font-size:18px; opacity:0.4;">⏳</span><span style="font-size:10px; color:var(--text-gray);">Pendiente</span>`
+                            }
+                        </div>
+
+                        <div class="cell visa-cell" style="padding:10px; text-align:center;">
+                            ${st.session2 
+                                ? `<span style="font-size:18px;">🎯</span><span style="font-size:10px; font-weight:900; color:#2E8B57;">Realizada</span><span style="font-size:9px; color:var(--text-gray);">${st.session2.fecha}</span><span style="font-size:8px; color:var(--navy-dark);">${st.session2.tema}</span>` 
+                                : `<span style="font-size:18px; opacity:0.4;">⏳</span><span style="font-size:10px; color:var(--text-gray);">Pendiente</span>`
+                            }
+                        </div>
+
+                        <div class="cell visa-cell" style="padding:10px; text-align:center; justify-content:center;">
+                            <span style="font-size:15px; font-weight:900; color:var(--navy-dark);">👥 ${st.assignedUsers.length}</span>
+                            <span style="font-size:9px; color:var(--text-gray);">${st.assignedUsers.length === 1 ? 'Tripulante' : 'Tripulantes'} asignados</span>
+                        </div>
+
+                        <div class="cell visa-cell" style="padding:10px; text-align:center; justify-content:center;">
+                            ${studentsNeedingHelp.length > 0 
+                                ? `<span style="background:#FFE4E1; color:#C0392B; padding:3px 8px; border-radius:12px; font-size:10px; font-weight:900;">⚠️ ${studentsNeedingHelp.length} Piden Refuerzo</span>
+                                   <div style="font-size:9px; color:var(--text-gray); margin-top:4px;">${studentsNeedingHelp.map(s => Core.formatName(s.user)).join(', ')}</div>` 
+                                : `<span style="color:#2E8B57; font-size:11px; font-weight:800;">✅ Sin alertas</span>`
+                            }
+                        </div>
+                    `;
+                });
+                admTrainersTable.innerHTML = trHtml;
+            }
+        }
+
+        // 5. Progreso Global (Filtrado por Flota)
         const gPercent = Core.calculateProgressPercent(myFleet, visaKeys);
         const globalFill = document.getElementById('globalProgressFill');
         const globalText = document.getElementById('globalProgressText');
         if (globalFill) globalFill.style.width = gPercent + '%';
         if (globalText) globalText.textContent = gPercent + '%';
 
-        // 5. Avance por País (Filtrado por Flota)
+        // 6. Avance por País (Filtrado por Flota)
         const countryPanel = document.getElementById('countryPanel');
         if (countryPanel) {
             const countries = [...new Set(myFleet.map(item => item['Bandera']).filter(Boolean))];
@@ -733,6 +954,24 @@
             logoutBtn.onclick = () => { if(confirm('¿Abandonar el mando central (Cerrar sesión)?')) Core.logout(); };
         }
     });
+
+    window.switchAdmiralTab = function(tab) {
+        document.querySelectorAll('.captain-tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('admGeneralWrapper').style.display = 'none';
+        document.getElementById('admTestersWrapper').style.display = 'none';
+        document.getElementById('admTrainersWrapper').style.display = 'none';
+
+        if (tab === 'testers') {
+            document.getElementById('admTabTesters').classList.add('active');
+            document.getElementById('admTestersWrapper').style.display = 'block';
+        } else if (tab === 'trainers') {
+            document.getElementById('admTabTrainers').classList.add('active');
+            document.getElementById('admTrainersWrapper').style.display = 'block';
+        } else {
+            document.getElementById('admTabGeneral').classList.add('active');
+            document.getElementById('admGeneralWrapper').style.display = 'block';
+        }
+    };
 </script>
 
 </body>

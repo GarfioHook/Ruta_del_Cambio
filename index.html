@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Proyecto Ulises - Acceso</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚓</text></svg>">
     
     <!-- NUEVAS FUENTES: Playfair Display (Títulos) y Lato (Textos) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -69,8 +70,8 @@
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background-image: url('img/Fondo.webp'); /* REEMPLAZA CON TU IMAGEN */
             background-size: 100% 100%;
-            pointer-events: none;
-            z-index: 50;
+            pointer-events: none !important;
+            z-index: 2;
         }
 
         /* --- LOGO / TÍTULO SUPERIOR --- */
@@ -102,7 +103,7 @@
             padding: 40px;
             position: relative;
             box-shadow: 0 15px 35px rgba(15, 32, 53, 0.2);
-            z-index: 10;
+            z-index: 100 !important;
             width: 90%;
             max-width: 650px;
             text-align: center;
@@ -225,8 +226,8 @@
             padding: 20px 60px; font-size: 24px; font-weight: 900; color: var(--navy-dark); 
             text-transform: uppercase; letter-spacing: 2px;
             box-shadow: inset 0 2px 4px rgba(255,255,255,0.5), 0 10px 25px rgba(15, 32, 53, 0.6);
-            cursor: pointer; transition: 0.3s; font-family: 'Lato', sans-serif;
-            z-index: 20; position: relative;
+            cursor: pointer !important; transition: 0.3s; font-family: 'Lato', sans-serif;
+            z-index: 100 !important; position: relative; pointer-events: auto !important;
         }
         @media (max-width: 768px) {
             .btn-start { padding: 15px 40px; font-size: 18px; }
@@ -257,7 +258,7 @@
     </div>
 
     <!-- Botón de Inicio Central -->
-    <button class="btn-start" id="btnStart">Comenzar Travesía</button>
+    <button class="btn-start" id="btnStart" onclick="comenzarTravesia(event)">Comenzar Travesía</button>
 
     <!-- Panel Modal de Login -->
     <div class="odyssey-panel" id="loginPanel" style="display: none;">
@@ -335,24 +336,34 @@
     let webhookVisaCache = null;
     let webhookFetchInProgress = false;
 
-    const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxcp3HlO-f4tK8h5pcQMaBPqecOAH-4UY2lfRcUkEl8oSQYTPqKyoHWm5ksop3EMRKKmQ/exec';
+    const webhookEndpoint = (window.Core && window.Core.WEBHOOK_URL) ? window.Core.WEBHOOK_URL : 'https://script.google.com/macros/s/AKfycbxcp3HlO-f4tK8h5pcQMaBPqecOAH-4UY2lfRcUkEl8oSQYTPqKyoHWm5ksop3EMRKKmQ/exec';
 
-    document.addEventListener('DOMContentLoaded', async () => {
+    document.addEventListener('DOMContentLoaded', () => {
         // Establecer el video a cámara lenta (50%)
         const bgVideo = document.getElementById('bgVideo');
         if (bgVideo) bgVideo.playbackRate = 0.5;
-
-        tripulantes = await Core.loadAppData();
     });
+
+    function comenzarTravesia(e) {
+        if (e && e.preventDefault) e.preventDefault();
+        const btn = document.getElementById('btnStart');
+        const panel = document.getElementById('loginPanel');
+        if (btn) btn.style.display = 'none';
+        if (panel) {
+            panel.style.display = 'block';
+            const emailInp = document.getElementById('emailInput');
+            if (emailInp) setTimeout(() => emailInp.focus(), 80);
+        }
+    }
+    window.comenzarTravesia = comenzarTravesia;
 
     const btnStart = document.getElementById('btnStart');
     const loginPanel = document.getElementById('loginPanel');
 
-    // Manejar el botón Comenzar Travesía
-    btnStart.addEventListener('click', () => {
-        btnStart.style.display = 'none';
-        loginPanel.style.display = 'block';
-    });
+    if (btnStart) {
+        btnStart.addEventListener('click', comenzarTravesia);
+        btnStart.addEventListener('pointerdown', comenzarTravesia);
+    }
 
     const input = document.getElementById('emailInput');
     const dropdown = document.getElementById('dropdown');
@@ -379,7 +390,6 @@
             fichaAvatarImg.src = avatar;
             fichaAvatarImg.style.display = 'block';
         } else if (avatar) {
-            // Caso de emoji o texto
             defaultAvatarIcon.textContent = avatar;
             defaultAvatarIcon.style.display = 'block';
             fichaAvatarImg.style.display = 'none';
@@ -395,7 +405,6 @@
             fichaRole.textContent = `${currentRole} - Rango: Oficial`;
         }
 
-        // Feedback visual de identificación positiva
         if (currentUser) {
             fichaCard.style.borderColor = 'var(--gold-primary)';
             fichaCheck.style.opacity = '1';
@@ -403,50 +412,86 @@
         }
     }
 
+    let searchDebounceTimer = null;
+    let lastSearchedEmail = '';
+
     /**
-     * Consulta al Webhook si el usuario ya aceptó la Visa de Zarpe.
-     * Recupera también Alias y Avatar si están disponibles.
+     * Busca y valida el usuario individual en el backend de Google Apps Script.
+     * Protege la nómina completa: ningún usuario se expone en el navegador.
      */
-    async function prefetchWebhookVisa(email) {
-        if (webhookFetchInProgress) return;
+    async function buscarYValidarTripulante(email) {
+        const cleanEmail = (email || '').trim().toLowerCase();
+        if (!cleanEmail || cleanEmail.length < 5 || !cleanEmail.includes('@')) {
+            resetFicha();
+            return;
+        }
+
+        if (cleanEmail === lastSearchedEmail && currentUser) {
+            return;
+        }
+
+        lastSearchedEmail = cleanEmail;
         webhookFetchInProgress = true;
-        
-        // Bloquear el botón mientras se valida contra el Webhook
         btnAccess.classList.remove('active');
-        btnAccess.textContent = 'Validando tripulante...';
+        btnAccess.textContent = 'Verificando bitácora...';
+        fichaRole.textContent = 'Consultando rol de navegación...';
 
         try {
-            const response = await fetch(`${WEBHOOK_URL}?email=${encodeURIComponent(email)}`);
-            const data = await response.json();
-            
-            // 1. Recuperar Perfil (Alias y Avatar) si vienen del Webhook
-            if (data && (data.alias || data.avatar)) {
-                Core.saveProfile(data.alias || '', data.avatar || '', email);
-                
-                // Si el usuario sigue siendo el mismo, actualizamos la UI inmediatamente
-                if (currentUser && currentUser.Email.toLowerCase() === email.toLowerCase()) {
-                    updateFichaVisual(data.alias, data.avatar);
-                }
-            }
+            const data = await Core.getUserFromBackend(cleanEmail);
 
-            // 2. Recuperar estado de Visa
-            if (data && data.visaZarpe === true) {
-                webhookVisaCache = true;
-                localStorage.setItem('portland_visa1_accepted_' + email, 'true');
-            } else {
-                webhookVisaCache = false;
-            }
-        } catch (err) {
-            console.log('Webhook no disponible o sin respuesta:', err);
-            webhookVisaCache = null;
-        } finally {
-            webhookFetchInProgress = false;
-            // Reactivar el botón solo después de recibir respuesta o fallar
-            if (currentUser && currentUser.Email.toLowerCase() === email.toLowerCase()) {
+            if (data && data.success && data.user) {
+                currentUser = data.user;
+                currentRole = data.role || currentUser.Rango || 'Tripulante';
+
+                fichaName.textContent = Core.formatName(currentUser);
+                fichaRole.textContent = `${currentRole} - Rango: Oficial`;
+
+                // Guardar perfil recibido si existe
+                if (data.alias || data.avatar) {
+                    Core.saveProfile(data.alias, data.avatar, currentUser.Email);
+                }
+
+                if (data.hasVisa) {
+                    webhookVisaCache = true;
+                    localStorage.setItem('portland_visa1_accepted_' + currentUser.Email, 'true');
+                } else {
+                    webhookVisaCache = !!localStorage.getItem('portland_visa1_accepted_' + currentUser.Email);
+                }
+
+                const profile = Core.getProfile(currentUser.Email);
+                updateFichaVisual(profile.aliasUsuario || data.alias, profile.avatarUsuario || data.avatar);
+
                 btnAccess.classList.add('active');
                 btnAccess.textContent = 'Iniciar Travesía';
+                dropdown.style.display = 'none';
+            } else {
+                resetFicha();
+                fichaName.textContent = 'No Encontrado';
+                fichaRole.textContent = 'Correo no registrado en la tripulación';
+                btnAccess.textContent = 'Iniciar Travesía';
             }
+        } catch (err) {
+            console.error('Error al validar tripulante:', err);
+            resetFicha();
+            fichaRole.textContent = 'Error de conexión con bitácora';
+            btnAccess.textContent = 'Iniciar Travesía';
+        } finally {
+            webhookFetchInProgress = false;
         }
+    }
+
+    function resetFicha() {
+        currentUser = null;
+        currentRole = null;
+        webhookVisaCache = null;
+        fichaName.textContent = '---';
+        fichaRole.textContent = 'Esperando identificación...';
+        defaultAvatarIcon.style.display = 'block';
+        fichaAvatarImg.style.display = 'none';
+        fichaCard.style.borderColor = 'var(--silver)';
+        fichaCheck.style.opacity = '0';
+        fichaCheck.style.transform = 'scale(0.5)';
+        btnAccess.classList.remove('active');
     }
 
     input.addEventListener('input', function() {
@@ -459,70 +504,33 @@
             dropdown.style.display = 'none';
         }
 
-        currentUser = tripulantes.find(user => user.Email.toLowerCase() === value);
-
-        if (currentUser) {
-            currentRole = Core.getUserRole(value, tripulantes);
-            fichaName.textContent = Core.formatName(currentUser);
-
-            // Resetear caché de webhook para este nuevo usuario identificado
-            webhookVisaCache = null;
-            webhookFetchInProgress = false;
-
-            // --- PRE-FETCH del Webhook si el CSV aún no tiene la visa marcada ---
-            const visaKey = 'portland_visa1_accepted_' + currentUser.Email;
-            const csvTieneVisa = currentUser['Visa de Zarpe'] === 'Si';
-            const localTieneVisa = !!localStorage.getItem(visaKey);
-
-            if (csvTieneVisa || localTieneVisa) {
-                webhookVisaCache = true;
-            }
-
-            // Llamamos SIEMPRE al Webhook para recuperar perfil o validar visa
-            // El botón se habilitará dentro de prefetchWebhookVisa al terminar la petición
-            prefetchWebhookVisa(currentUser.Email);
-            
-            // Revisa si ya tiene perfil guardado localmente
-            const profile = Core.getProfile(value);
-            updateFichaVisual(profile.aliasUsuario, profile.avatarUsuario);
-
-            dropdown.style.display = 'none';
+        clearTimeout(searchDebounceTimer);
+        // Si tiene formato de email corporativo (@pjportland o @pjepoxa o @...), verificar automáticamente
+        if (value.includes('@') && value.indexOf('@') < value.length - 3) {
+            searchDebounceTimer = setTimeout(() => {
+                buscarYValidarTripulante(value);
+            }, 350);
         } else {
-            fichaName.textContent = '---';
-            fichaRole.textContent = 'Esperando identificación...';
-            defaultAvatarIcon.style.display = 'block';
-            fichaAvatarImg.style.display = 'none';
-            fichaCard.style.borderColor = 'var(--silver)';
-            fichaCheck.style.opacity = '0';
-            fichaCheck.style.transform = 'scale(0.5)';
-            
-            btnAccess.classList.remove('active');
-            currentRole = null;
-            currentUser = null;
-            webhookVisaCache = null;
+            resetFicha();
+        }
+    });
+
+    // Validación al presionar Enter en el input
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            clearTimeout(searchDebounceTimer);
+            buscarYValidarTripulante(this.value.trim());
         }
     });
 
     btnAccess.addEventListener('click', async function() {
-        if (currentUser && currentRole) {
-            // Si el webhook todavía está consultando, esperamos a que termine antes de decidir
-            if (webhookFetchInProgress) {
-                btnAccess.textContent = 'Verificando registros...';
-                btnAccess.classList.remove('active');
-                await new Promise(resolve => {
-                    let waited = 0;
-                    const interval = setInterval(() => {
-                        waited += 200;
-                        if (!webhookFetchInProgress || waited >= 4000) {
-                            clearInterval(interval);
-                            resolve();
-                        }
-                    }, 200);
-                });
-                btnAccess.textContent = 'Iniciar Travesía';
-                btnAccess.classList.add('active');
-            }
+        // Si aún no se ha validado pero hay un email escrito en el input, validarlo primero
+        if (!currentUser && input.value.trim().includes('@')) {
+            await buscarYValidarTripulante(input.value.trim());
+        }
 
+        if (currentUser && currentRole) {
             Core.saveSession(currentUser, currentRole);
             
             const profile = Core.getProfile();

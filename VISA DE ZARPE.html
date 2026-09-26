@@ -463,7 +463,8 @@
 
             // Send to Webhook
             try {
-                await fetch("https://script.google.com/macros/s/AKfycbxcp3HlO-f4tK8h5pcQMaBPqecOAH-4UY2lfRcUkEl8oSQYTPqKyoHWm5ksop3EMRKKmQ/exec", {
+                const targetWebhook = (window.Core && window.Core.WEBHOOK_URL) ? window.Core.WEBHOOK_URL : "https://script.google.com/macros/s/AKfycbxcp3HlO-f4tK8h5pcQMaBPqecOAH-4UY2lfRcUkEl8oSQYTPqKyoHWm5ksop3EMRKKmQ/exec";
+                await fetch(targetWebhook, {
                     method: "POST",
                     mode: "no-cors",
                     headers: {
