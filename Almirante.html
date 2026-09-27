@@ -537,12 +537,14 @@
         const user = Core.checkSession();
         if (!user) return;
 
-        const allData = await Core.loadAppData();
+        const allData = await Core.loadAppData(true);
         
         // Sincronizar el objeto de usuario local
-        const freshUser = allData.find(u => u.Email.toLowerCase() === user.Email.toLowerCase());
+        const myEmail = (user.Email || '').toLowerCase().trim();
+        const freshUser = allData.find(u => (u.Email || '').toLowerCase().trim() === myEmail);
         if (freshUser) {
             Object.assign(user, freshUser);
+            localStorage.setItem('portland_user', JSON.stringify(user));
         }
 
         // --- LÓGICA DE JERARQUÍA Y FLOTA ---
@@ -701,18 +703,11 @@
                     let totalPct = 0;
                     subCrew.forEach(u => {
                         let val = u[visa.key];
-                        let pct = 0;
-                        if (val === 'Si' || val === 'SI' || val === 'si') {
-                            pct = 100;
-                            completed++;
-                        } else if (!isNaN(parseInt(val))) {
-                            pct = parseInt(val);
-                            if (pct >= 100) {
-                                pct = 100;
-                                completed++;
-                            }
-                        }
-                        totalPct += pct;
+                        if (val === undefined && visa.key.includes('Aduanas')) val = u['Visa de Aduana'];
+                        if (val === undefined && visa.key.includes('Aduana')) val = u['Visa de Aduanas'];
+                        const status = (window.Core && window.Core.parseVisaStatus) ? Core.parseVisaStatus(val) : { pct: (val === 'Si' || val === '1' ? 100 : 0), isDone: (val === 'Si' || val === '1') };
+                        if (status.isDone) completed++;
+                        totalPct += status.pct;
                     });
                     
                     const percent = subCrew.length > 0 ? Math.round(totalPct / subCrew.length) : 0;

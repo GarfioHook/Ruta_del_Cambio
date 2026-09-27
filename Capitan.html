@@ -555,12 +555,14 @@
         const user = Core.checkSession();
         if (!user) return;
 
-        const allData = await Core.loadAppData();
+        const allData = await Core.loadAppData(true);
         
         // Sincronizar el objeto de usuario local con los datos frescos
-        const freshUser = allData.find(u => u.Email.toLowerCase() === user.Email.toLowerCase());
+        const myEmail = (user.Email || '').toLowerCase().trim();
+        const freshUser = allData.find(u => (u.Email || '').toLowerCase().trim() === myEmail);
         if (freshUser) {
             Object.assign(user, freshUser);
+            localStorage.setItem('portland_user', JSON.stringify(user));
         }
 
         // --- MODO VISTA DEL ALMIRANTE ---
@@ -737,19 +739,11 @@
                 
                 visasData.forEach(visa => {
                     let val = member[visa.key];
-                    let pct = 0;
-                    let isDone = false;
-                    
-                    if (val === 'Si' || val === 'SI' || val === 'si') {
-                        pct = 100;
-                        isDone = true;
-                    } else if (!isNaN(parseInt(val))) {
-                        pct = parseInt(val);
-                        if (pct >= 100) {
-                            pct = 100;
-                            isDone = true;
-                        }
-                    }
+                    if (val === undefined && visa.key.includes('Aduanas')) val = member['Visa de Aduana'];
+                    if (val === undefined && visa.key.includes('Aduana')) val = member['Visa de Aduanas'];
+                    const status = (window.Core && window.Core.parseVisaStatus) ? Core.parseVisaStatus(val) : { pct: (val === 'Si' || val === '1' ? 100 : 0), isDone: (val === 'Si' || val === '1') };
+                    let pct = status.pct;
+                    let isDone = status.isDone;
                     
                     rowsHtml += `
                         <div class="cell visa-cell" ${isCaptainSelf ? 'style="background: rgba(197, 160, 89, 0.1);"' : ''}>

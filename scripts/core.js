@@ -81,17 +81,22 @@ async function loadAppData(forceRefresh = false) {
         const viewAs = urlParams.get('viewAs') || '';
 
         const cacheKey = `portland_appdata_${email}_${viewAs}`;
+        const cacheTimeKey = `portland_appdata_time_${email}_${viewAs}`;
+        const CACHE_TTL_MS = 5000; // 5 segundos para evitar peticiones duplicadas instantáneas
         
-        // Si no se fuerza refresco, intentar recuperar de caché de sesión para respuesta instantánea
+        // Si no se fuerza refresco y la caché es reciente (< 5 segundos), usarla
         if (!forceRefresh) {
-            const cached = sessionStorage.getItem(cacheKey);
-            if (cached) {
-                try {
-                    const cachedData = JSON.parse(cached);
-                    if (Array.isArray(cachedData) && cachedData.length > 0) {
-                        return cachedData;
-                    }
-                } catch (e) {}
+            const cachedTime = parseInt(sessionStorage.getItem(cacheTimeKey) || '0', 10);
+            if (Date.now() - cachedTime < CACHE_TTL_MS) {
+                const cached = sessionStorage.getItem(cacheKey);
+                if (cached) {
+                    try {
+                        const cachedData = JSON.parse(cached);
+                        if (Array.isArray(cachedData) && cachedData.length > 0) {
+                            return cachedData;
+                        }
+                    } catch (e) {}
+                }
             }
         }
 
@@ -109,6 +114,18 @@ async function loadAppData(forceRefresh = false) {
         // Normalizar estados de visa y sincronizar memoria local
         const visas = ['Visa de Zarpe', 'Visa de Navegacion', 'Visa de Aduanas', 'Visa de Descarga', 'Visa de Transito'];
         data.forEach(user => {
+            // Sincronizar variantes singular/plural de Visa de Aduanas
+            const aduanasVal = user['Visa de Aduanas'] !== undefined ? user['Visa de Aduanas'] : user['Visa de Aduana'];
+            if (aduanasVal !== undefined) {
+                user['Visa de Aduanas'] = aduanasVal;
+                user['Visa de Aduana'] = aduanasVal;
+            }
+            const fechaAduanas = user['Fecha Visa de Aduanas'] !== undefined ? user['Fecha Visa de Aduanas'] : user['Fecha Visa de Aduana'];
+            if (fechaAduanas !== undefined) {
+                user['Fecha Visa de Aduanas'] = fechaAduanas;
+                user['Fecha Visa de Aduana'] = fechaAduanas;
+            }
+
             // Normalizar a "Si" si viene como "SI", "si", "Si"
             visas.forEach(visa => {
                 if (user[visa] && user[visa].toString().toLowerCase() === 'si') {
@@ -121,20 +138,21 @@ async function loadAppData(forceRefresh = false) {
             user.Trainer = (user.Trainer && user.Trainer.trim().toUpperCase() === 'SI') ? 'SI' : 'NO';
             user['Trainer a Cargo'] = (user['Trainer a Cargo'] || '').trim();
 
-            if (localStorage.getItem('portland_visa1_accepted_' + user.Email)) {
+            if (localStorage.getItem('portland_visa1_accepted_' + (user.Email || '').toLowerCase().trim())) {
                 user['Visa de Zarpe'] = 'Si';
             }
         });
 
         // REFRESCAR SESIÓN: Si hay un usuario logueado, actualizamos su objeto en localStorage 
-        const freshUser = data.find(u => (u.Email || '').toLowerCase() === email);
+        const freshUser = data.find(u => (u.Email || '').toLowerCase().trim() === email);
         if (freshUser) {
             localStorage.setItem('portland_user', JSON.stringify(freshUser));
         }
         
-        // Guardar en caché de sesión para rapidez de navegación
+        // Guardar en caché de sesión con marca de tiempo
         try {
             sessionStorage.setItem(cacheKey, JSON.stringify(data));
+            sessionStorage.setItem(cacheTimeKey, Date.now().toString());
         } catch (e) {}
 
         return data;
@@ -287,6 +305,44 @@ function checkSession() {
 }
 
 /**
+ * Parsea el estado y porcentaje de una Visa (acepta 'Si', 'SI', '1', '1.0', '100%', 1, decimales 0.5 = 50%, etc.)
+ * @param {*} val Valor proveniente de la hoja o backend
+ * @returns {{ pct: number, isDone: boolean }}
+ */
+function parseVisaStatus(val) {
+    if (val === null || val === undefined) return { pct: 0, isDone: false };
+    const str = val.toString().trim().toLowerCase();
+    if (!str || str === 'no' || str === '0' || str === '0%') return { pct: 0, isDone: false };
+    
+    if (str === 'si' || str === 'sí' || str === 'true' || str === 'completado') {
+        return { pct: 100, isDone: true };
+    }
+    
+    // Si contiene '%' (ej: "100%", "75%")
+    if (str.includes('%')) {
+        const num = parseFloat(str.replace('%', '').trim());
+        if (!isNaN(num)) {
+            const pct = Math.min(100, Math.max(0, Math.round(num)));
+            return { pct: pct, isDone: pct >= 100 };
+        }
+    }
+    
+    // Si es un número decimal o entero (ej: 1 o "1" proveniente de Google Sheets para 100%, 0.5 para 50%, o 100)
+    const num = parseFloat(str);
+    if (!isNaN(num)) {
+        // En Google Sheets, un formato de porcentaje 100% se exporta como 1 (o 1.0), y 50% como 0.5
+        if (num > 0 && num <= 1) {
+            const pct = Math.round(num * 100);
+            return { pct: pct, isDone: pct >= 100 };
+        }
+        const pct = Math.min(100, Math.max(0, Math.round(num)));
+        return { pct: pct, isDone: pct >= 100 };
+    }
+    
+    return { pct: 0, isDone: false };
+}
+
+/**
  * Genera el "Muro de la Victoria" filtrado.
  */
 function getLatestAchievements(allData, filterCaptainEmail = null) {
@@ -316,13 +372,8 @@ function getLatestAchievements(allData, filterCaptainEmail = null) {
 
         visas.forEach(visa => {
             const val = user[visa];
-            let isDone = false;
-            if (val === 'Si' || val === 'SI' || val === 'si') {
-                isDone = true;
-            } else if (!isNaN(parseInt(val)) && parseInt(val) >= 100) {
-                isDone = true;
-            }
-            if (isDone) {
+            const status = parseVisaStatus(val);
+            if (status.isDone) {
                 const dateKey = `Fecha ${visa}`;
                 achievements.push({
                     name: formatName(user),
@@ -349,12 +400,10 @@ function calculateProgressPercent(users, visas) {
     users.forEach(u => {
         visas.forEach(v => {
             let val = u[v];
-            if (val === 'Si' || val === 'SI' || val === 'si') {
-                totalProgress += 100;
-            } else if (!isNaN(parseInt(val))) {
-                let pct = parseInt(val);
-                totalProgress += pct > 100 ? 100 : pct;
-            }
+            if (val === undefined && v.includes('Aduanas')) val = u['Visa de Aduana'];
+            if (val === undefined && v.includes('Aduana')) val = u['Visa de Aduanas'];
+            const status = parseVisaStatus(val);
+            totalProgress += status.pct;
         });
     });
     return totalPossible ? Math.round((totalProgress / totalPossible) * 100) : 0;
@@ -698,6 +747,7 @@ window.Core = {
     formatGreeting,
     getFlag,
     calculateProgressPercent,
+    parseVisaStatus,
     getDaysToGoLive,
     getDaysToNextDestination,
     saveProfile,
