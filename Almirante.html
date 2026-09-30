@@ -537,7 +537,45 @@
         const user = Core.checkSession();
         if (!user) return;
 
-        const allData = await Core.loadAppData(true);
+        // --- ACTUALIZAR PLACA DE IDENTIFICACIÓN INMEDIATAMENTE (0ms) ---
+        const renderBadge = (currentUser) => {
+            const profile = Core.getProfile(currentUser.Email);
+            const displayAlias = document.getElementById('displayAlias');
+            const displayName = document.getElementById('displayName');
+            const displayAvatarImg = document.getElementById('displayAvatarImg');
+            const displayAvatarIcon = document.getElementById('displayAvatarIcon');
+            
+            if (displayName) displayName.innerText = Core.formatName(currentUser);
+
+            if (displayAlias) {
+                const isAdmiral = window.location.pathname.includes('Almirante');
+                const isCaptain = window.location.pathname.includes('Capitan');
+                let prefix = isAdmiral ? 'Almirante ' : (isCaptain ? 'Capitán ' : '');
+                
+                const effectiveAlias = profile.aliasUsuario || currentUser.Alias;
+                if (effectiveAlias) {
+                    displayAlias.innerText = `¡Hola, ${effectiveAlias}!`;
+                } else {
+                    displayAlias.innerText = `¡Hola, ${prefix}${Core.formatGreeting(currentUser)}!`;
+                }
+            }
+
+            if (profile.avatarUsuario && (profile.avatarUsuario.includes('.webp') || profile.avatarUsuario.includes('.png') || profile.avatarUsuario.includes('.jpg'))) {
+                if (displayAvatarIcon) displayAvatarIcon.style.display = 'none';
+                if (displayAvatarImg) {
+                    displayAvatarImg.src = profile.avatarUsuario;
+                    displayAvatarImg.style.display = 'block';
+                }
+            } else if (profile.avatarUsuario) {
+                if (displayAvatarIcon) displayAvatarIcon.innerText = profile.avatarUsuario;
+            }
+        };
+
+        // Renderizado instantáneo de placa
+        renderBadge(user);
+
+        // Cargar datos de la flota (utiliza caché de 5 min si ya existe)
+        const allData = await Core.loadAppData(false);
         
         // Sincronizar el objeto de usuario local
         const myEmail = (user.Email || '').toLowerCase().trim();
@@ -545,6 +583,7 @@
         if (freshUser) {
             Object.assign(user, freshUser);
             localStorage.setItem('portland_user', JSON.stringify(user));
+            renderBadge(user);
         }
 
         // --- LÓGICA DE JERARQUÍA Y FLOTA ---
@@ -559,38 +598,6 @@
             (u['Capitan a Cargo'] || '').toLowerCase() === user.Email.toLowerCase() && 
             u.Email.toLowerCase() !== user.Email.toLowerCase()
         );
-        
-        // Configurar Perfil Almirante
-        const profile = Core.getProfile();
-        const displayAlias = document.getElementById('displayAlias');
-        const displayName = document.getElementById('displayName');
-        const displayAvatarImg = document.getElementById('displayAvatarImg');
-        const displayAvatarIcon = document.getElementById('displayAvatarIcon');
-        
-        if (displayName) displayName.innerText = Core.formatName(user);
-
-        if (displayAlias) {
-            const isAdmiral = window.location.pathname.includes('Almirante');
-            const isCaptain = window.location.pathname.includes('Capitan');
-            let prefix = isAdmiral ? 'Almirante ' : (isCaptain ? 'Capitán ' : '');
-            
-            const effectiveAlias = profile.aliasUsuario || user.Alias;
-            if (effectiveAlias) {
-                displayAlias.innerText = `¡Hola, ${effectiveAlias}!`;
-            } else {
-                displayAlias.innerText = `¡Hola, ${prefix}${Core.formatGreeting(user)}!`;
-            }
-        }
-
-        if (profile.avatarUsuario && (profile.avatarUsuario.includes('.webp') || profile.avatarUsuario.includes('.png') || profile.avatarUsuario.includes('.jpg'))) {
-            if (displayAvatarIcon) displayAvatarIcon.style.display = 'none';
-            if (displayAvatarImg) {
-                displayAvatarImg.src = profile.avatarUsuario;
-                displayAvatarImg.style.display = 'block';
-            }
-        } else if (profile.avatarUsuario) {
-            if (displayAvatarIcon) displayAvatarIcon.innerText = profile.avatarUsuario;
-        }
 
         // Modal de Perfil
         const profilePopup = document.getElementById('profilePopup');

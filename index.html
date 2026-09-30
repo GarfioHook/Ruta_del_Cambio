@@ -237,6 +237,65 @@
             transform: translateY(-5px) scale(1.02); box-shadow: 0 15px 35px rgba(15, 32, 53, 0.8);
         }
 
+        /* --- SESIÓN ACTIVA Y FAST RE-ENTRY (0ms) --- */
+        .active-session-card {
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid var(--gold-primary);
+            padding: 20px; margin-bottom: 25px;
+            box-shadow: 0 8px 25px rgba(15, 32, 53, 0.15);
+            text-align: left; position: relative;
+        }
+        .active-session-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
+        }
+        .active-badge {
+            background: var(--navy-dark); color: var(--gold-light);
+            font-size: 11px; font-weight: 800; text-transform: uppercase;
+            letter-spacing: 1px; padding: 4px 10px; border-radius: 12px;
+        }
+        .active-session-body {
+            display: flex; align-items: center; gap: 15px;
+        }
+        .btn-secondary {
+            background: transparent; border: none; color: var(--text-gray);
+            font-size: 13px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 1px; cursor: pointer; margin-top: 12px;
+            display: block; width: 100%; text-align: center; padding: 6px; transition: 0.2s;
+        }
+        .btn-secondary:hover { color: var(--navy-dark); text-decoration: underline; }
+
+        /* --- TRIPULANTES RECORDADOS (CHIPS) --- */
+        .remembered-crew-container {
+            margin-bottom: 18px; text-align: left;
+        }
+        .remembered-crew-list {
+            display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px;
+        }
+        .crew-chip {
+            background: #fff; border: 1px solid var(--silver);
+            padding: 6px 14px; border-radius: 20px; font-size: 13px;
+            font-weight: 700; color: var(--navy-dark); cursor: pointer;
+            display: flex; align-items: center; gap: 6px; white-space: nowrap; transition: 0.2s;
+        }
+        .crew-chip:hover {
+            border-color: var(--gold-primary); background: var(--bg-parchment);
+            transform: translateY(-1px); box-shadow: 0 3px 8px rgba(15, 32, 53, 0.1);
+        }
+
+        /* --- CHIPS DE DOMINIO RÁPIDO --- */
+        .domain-chips {
+            display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;
+        }
+        .domain-chip {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px dashed var(--silver); color: var(--navy-light);
+            font-size: 12px; font-weight: 700; padding: 5px 12px;
+            border-radius: 4px; cursor: pointer; transition: 0.2s;
+        }
+        .domain-chip:hover {
+            background: var(--navy-light); color: #fff; border-color: var(--navy-light);
+        }
+
     </style>
 </head>
 <body>
@@ -267,28 +326,62 @@
 
         <h2 class="panel-title">Manifiesto de Embarque</h2>
 
-        <div class="input-group">
-            <label class="input-label">Ingresa tu Correo Corporativo</label>
-            <input type="email" id="emailInput" class="email-input" placeholder="ejemplo@pjportland.cl" autocomplete="off">
-            <div id="dropdown" class="dropdown"></div>
-        </div>
-
-        <div class="input-group">
-            <label class="input-label">Identificación de Tripulante</label>
-            <div class="ficha-card" id="fichaCard">
-                <div class="ficha-avatar">
-                    <span id="defaultAvatarIcon">⚓</span>
-                    <img id="fichaAvatarImg" src="" alt="Avatar">
+        <!-- Opción A: Sesión Activa Encontrada (Fast Re-Entry 0ms) -->
+        <div id="activeSessionCard" class="active-session-card" style="display: none;">
+            <div class="active-session-header">
+                <span class="active-badge">Sesión Activa</span>
+                <span style="font-size: 12px; color: var(--text-gray); font-weight: bold;">Acceso Rápido</span>
+            </div>
+            <div class="active-session-body">
+                <div class="ficha-avatar" style="width: 55px; height: 55px;">
+                    <span id="activeAvatarIcon">⚓</span>
+                    <img id="activeAvatarImg" src="" alt="Avatar" style="display:none; width:100%; height:100%; object-fit:cover;">
                 </div>
                 <div class="ficha-info">
-                    <div class="ficha-name" id="fichaName">---</div>
-                    <div class="ficha-role" id="fichaRole">Esperando identificación...</div>
+                    <div class="ficha-name" id="activeName" style="font-size: 20px;">---</div>
+                    <div class="ficha-role" id="activeRole">---</div>
                 </div>
-                <div class="ficha-check" id="fichaCheck">✓</div>
             </div>
+            <button class="btn-access active" id="btnResumeSession" style="margin-top: 15px;">Ingresar a mi Puesto de Mando ➔</button>
+            <button class="btn-secondary" id="btnSwitchAccount" type="button">Ingresar con otro correo</button>
         </div>
 
-        <button class="btn-access" id="btnAccess">Iniciar Travesía</button>
+        <!-- Opción B: Formulario de Identificación Manual / Nuevo Usuario -->
+        <div id="manualLoginSection">
+            <!-- Tripulantes recordados en este dispositivo -->
+            <div id="rememberedCrewSection" class="remembered-crew-container" style="display: none;">
+                <label class="input-label" style="font-size: 12px; margin-bottom: 6px;">Tripulantes Frecuentes en este equipo:</label>
+                <div id="rememberedCrewList" class="remembered-crew-list"></div>
+            </div>
+
+            <div class="input-group">
+                <label class="input-label">Ingresa tu Correo Corporativo</label>
+                <input type="email" id="emailInput" class="email-input" placeholder="ejemplo@pjportland.cl" autocomplete="off">
+                <div id="dropdown" class="dropdown"></div>
+                <!-- Chips de sugerencias de dominio corporativo -->
+                <div class="domain-chips" id="domainChips">
+                    <button type="button" class="domain-chip" data-domain="@pjportland.cl">+ @pjportland.cl</button>
+                    <button type="button" class="domain-chip" data-domain="@pjepoxa.cl">+ @pjepoxa.cl</button>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label class="input-label">Identificación de Tripulante</label>
+                <div class="ficha-card" id="fichaCard">
+                    <div class="ficha-avatar">
+                        <span id="defaultAvatarIcon">⚓</span>
+                        <img id="fichaAvatarImg" src="" alt="Avatar">
+                    </div>
+                    <div class="ficha-info">
+                        <div class="ficha-name" id="fichaName">---</div>
+                        <div class="ficha-role" id="fichaRole">Esperando identificación...</div>
+                    </div>
+                    <div class="ficha-check" id="fichaCheck">✓</div>
+                </div>
+            </div>
+
+            <button class="btn-access" id="btnAccess">Iniciar Travesía</button>
+        </div>
     </div>
 
     <!-- Modal de Personalización (Aparece tras validar el correo si no tiene avatar) -->
@@ -343,12 +436,36 @@
         const bgVideo = document.getElementById('bgVideo');
         if (bgVideo) bgVideo.playbackRate = 0.5;
 
-        // Limpiar sesión activa en index.html para evitar contaminación entre usuarios
-        currentUser = null;
-        currentRole = null;
-        webhookVisaCache = null;
-        localStorage.removeItem('portland_user');
-        localStorage.removeItem('portland_role');
+        // Comprobar si se solicitó logout explícito en la URL (?logout=true)
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('logout') === 'true') {
+            currentUser = null;
+            currentRole = null;
+            webhookVisaCache = null;
+            localStorage.removeItem('portland_user');
+            localStorage.removeItem('portland_role');
+        } else {
+            // Revisar si existe una sesión activa persistente para Fast Re-Entry
+            const activeUserStr = localStorage.getItem('portland_user');
+            const activeRole = localStorage.getItem('portland_role');
+            if (activeUserStr && activeRole) {
+                try {
+                    const parsedUser = JSON.parse(activeUserStr);
+                    currentUser = parsedUser;
+                    currentRole = activeRole;
+                    mostrarSesionActiva(parsedUser, activeRole);
+
+                    // Actualizar botón de inicio con bienvenida personalizada
+                    const btnStart = document.getElementById('btnStart');
+                    if (btnStart) {
+                        const shortName = (Core.formatName(parsedUser) || '').split(' ')[0];
+                        btnStart.innerHTML = `Continuar como ${shortName} ⚓`;
+                    }
+                } catch (e) {}
+            }
+        }
+
+        renderizarTripulantesRecordados();
     });
 
     function comenzarTravesia(e) {
@@ -422,14 +539,131 @@
     let searchDebounceTimer = null;
     let lastSearchedEmail = '';
 
+    let currentAbortController = null;
+
     /**
-     * Busca y valida el usuario individual en el backend de Google Apps Script.
-     * Protege la nómina completa: ningún usuario se expone en el navegador.
+     * Muestra la tarjeta de sesión activa persistente permitiendo entrada en 0ms.
      */
-    async function buscarYValidarTripulante(email) {
+    function mostrarSesionActiva(user, role) {
+        const activeCard = document.getElementById('activeSessionCard');
+        const manualSec = document.getElementById('manualLoginSection');
+        const activeName = document.getElementById('activeName');
+        const activeRole = document.getElementById('activeRole');
+        const activeAvatarImg = document.getElementById('activeAvatarImg');
+        const activeAvatarIcon = document.getElementById('activeAvatarIcon');
+
+        if (!activeCard || !user) return;
+
+        const profile = Core.getProfile(user.Email);
+        const displayAlias = profile.aliasUsuario || user.Alias || '';
+        const displayName = Core.formatName(user);
+
+        if (activeName) activeName.textContent = displayName;
+        if (activeRole) {
+            activeRole.textContent = displayAlias ? `${role} - "${displayAlias}"` : `${role} - Rango Oficial`;
+        }
+
+        const avatar = profile.avatarUsuario || user.Avatar;
+        if (avatar && (avatar.includes('img/') || avatar.includes('.webp') || avatar.includes('.png'))) {
+            if (activeAvatarIcon) activeAvatarIcon.style.display = 'none';
+            if (activeAvatarImg) {
+                activeAvatarImg.src = avatar;
+                activeAvatarImg.style.display = 'block';
+            }
+        } else if (avatar) {
+            if (activeAvatarIcon) {
+                activeAvatarIcon.textContent = avatar;
+                activeAvatarIcon.style.display = 'block';
+            }
+            if (activeAvatarImg) activeAvatarImg.style.display = 'none';
+        }
+
+        activeCard.style.display = 'block';
+        if (manualSec) manualSec.style.display = 'none';
+    }
+
+    /**
+     * Renderiza botones de acceso rápido para tripulantes recordados en este dispositivo.
+     */
+    function renderizarTripulantesRecordados() {
+        const listContainer = document.getElementById('rememberedCrewList');
+        const sectionContainer = document.getElementById('rememberedCrewSection');
+        if (!listContainer || !sectionContainer) return;
+
+        const crew = (Core.getRememberedCrew) ? Core.getRememberedCrew() : [];
+        if (!crew || crew.length === 0) {
+            sectionContainer.style.display = 'none';
+            return;
+        }
+
+        listContainer.innerHTML = '';
+        crew.forEach(member => {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'crew-chip';
+            chip.innerHTML = `<span>⚓</span> <span>${member.name || member.email}</span>`;
+            chip.title = `${member.role || 'Tripulante'} - ${member.email}`;
+            chip.onclick = () => {
+                input.value = member.email;
+                buscarYValidarTripulante(member.email, true);
+            };
+            listContainer.appendChild(chip);
+        });
+        sectionContainer.style.display = 'block';
+    }
+
+    /**
+     * Aplica los datos de usuario a la ficha visual y activa el botón de acceso.
+     */
+    function aplicarDatosUsuarioAFicha(userObj, role, alias, avatar, hasVisa) {
+        currentUser = userObj;
+        currentRole = role || userObj.Rango || 'Tripulante';
+
+        fichaName.textContent = Core.formatName(currentUser);
+
+        const cleanAlias = (alias || currentUser.Alias || '').trim();
+        const cleanAvatar = (avatar || currentUser.Avatar || '').trim();
+
+        if (cleanAlias) {
+            Core.saveProfile(cleanAlias, cleanAvatar || 'img/Avatar01.webp', currentUser.Email);
+        }
+
+        if (hasVisa || (currentUser['Visa de Zarpe'] && currentUser['Visa de Zarpe'].toString().toLowerCase() === 'si')) {
+            webhookVisaCache = true;
+            localStorage.setItem('portland_visa1_accepted_' + currentUser.Email, 'true');
+        } else {
+            webhookVisaCache = !!localStorage.getItem('portland_visa1_accepted_' + currentUser.Email);
+        }
+
+        const profile = Core.getProfile(currentUser.Email);
+        const displayAliasText = cleanAlias || profile.aliasUsuario || '';
+
+        if (displayAliasText && currentRole) {
+            fichaRole.textContent = `${currentRole} - "${displayAliasText}"`;
+        } else if (currentRole) {
+            fichaRole.textContent = `${currentRole} - Rango: Oficial`;
+        }
+
+        updateFichaVisual(displayAliasText, profile.avatarUsuario || cleanAvatar);
+
+        btnAccess.classList.add('active');
+        btnAccess.textContent = 'Iniciar Travesía';
+        dropdown.style.display = 'none';
+    }
+
+    /**
+     * Busca y valida el usuario individual.
+     * Implementa UI Optimista (0ms en usuarios de caché local) y AbortController para llamadas de red.
+     */
+    async function buscarYValidarTripulante(email, isManualSubmit = false) {
         const cleanEmail = (email || '').trim().toLowerCase();
-        if (!cleanEmail || cleanEmail.length < 5 || !cleanEmail.includes('@')) {
-            resetFicha();
+        
+        // Validación de formato de correo para evitar peticiones prematuras
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const looksLikeEmail = emailRegex.test(cleanEmail);
+
+        if (!cleanEmail || (!looksLikeEmail && !isManualSubmit)) {
+            if (!cleanEmail) resetFicha();
             return;
         }
 
@@ -438,60 +672,63 @@
         }
 
         lastSearchedEmail = cleanEmail;
+
+        // 1. REVISIÓN EN CACHÉ LOCAL (0ms): Si ya se autenticó antes en este equipo, mostrar de inmediato
+        const localCached = Core.getLocalCachedUser ? Core.getLocalCachedUser(cleanEmail) : null;
+        if (localCached && localCached.success && localCached.user) {
+            aplicarDatosUsuarioAFicha(
+                localCached.user,
+                localCached.role,
+                localCached.alias,
+                localCached.avatar,
+                localCached.hasVisa
+            );
+            if (isManualSubmit) return;
+        } else {
+            btnAccess.classList.remove('active');
+            btnAccess.textContent = 'Verificando bitácora...';
+            fichaRole.textContent = 'Consultando rol de navegación...';
+        }
+
+        // Cancelar petición anterior si el usuario sigue tecleando
+        if (currentAbortController) {
+            currentAbortController.abort();
+        }
+        currentAbortController = new AbortController();
         webhookFetchInProgress = true;
-        btnAccess.classList.remove('active');
-        btnAccess.textContent = 'Verificando bitácora...';
-        fichaRole.textContent = 'Consultando rol de navegación...';
 
         try {
-            const data = await Core.getUserFromBackend(cleanEmail);
+            const data = await Core.getUserFromBackend(cleanEmail, currentAbortController.signal);
+
+            if (data && data.aborted) {
+                return; // Petición abortada por nuevo tecleo
+            }
 
             if (data && data.success && data.user) {
-                currentUser = data.user;
-                currentRole = data.role || currentUser.Rango || 'Tripulante';
-
-                fichaName.textContent = Core.formatName(currentUser);
-
-                // Alias prioritario desde backend estrictamente para este usuario
-                const backendAlias = (data.alias || currentUser.Alias || '').trim();
-                const backendAvatar = (data.avatar || '').trim();
-
-                if (backendAlias) {
-                    Core.saveProfile(backendAlias, backendAvatar || 'img/Avatar01.webp', currentUser.Email);
-                }
-
-                if (data.hasVisa || (currentUser['Visa de Zarpe'] && currentUser['Visa de Zarpe'].toString().toLowerCase() === 'si')) {
-                    webhookVisaCache = true;
-                    localStorage.setItem('portland_visa1_accepted_' + currentUser.Email, 'true');
-                } else {
-                    webhookVisaCache = !!localStorage.getItem('portland_visa1_accepted_' + currentUser.Email);
-                }
-
-                const profile = Core.getProfile(currentUser.Email);
-                const displayAliasText = backendAlias || profile.aliasUsuario || '';
-
-                if (displayAliasText && currentRole) {
-                    fichaRole.textContent = `${currentRole} - "${displayAliasText}"`;
-                } else if (currentRole) {
-                    fichaRole.textContent = `${currentRole} - Rango: Oficial`;
-                }
-
-                updateFichaVisual(displayAliasText, profile.avatarUsuario);
-
-                btnAccess.classList.add('active');
-                btnAccess.textContent = 'Iniciar Travesía';
-                dropdown.style.display = 'none';
+                aplicarDatosUsuarioAFicha(
+                    data.user,
+                    data.role,
+                    data.alias,
+                    data.avatar,
+                    data.hasVisa
+                );
             } else {
-                resetFicha();
-                fichaName.textContent = 'No Encontrado';
-                fichaRole.textContent = 'Correo no registrado en la tripulación';
-                btnAccess.textContent = 'Iniciar Travesía';
+                if (!localCached) {
+                    resetFicha();
+                    fichaName.textContent = 'No Encontrado';
+                    fichaRole.textContent = 'Correo no registrado en la tripulación';
+                    btnAccess.textContent = 'Iniciar Travesía';
+                }
             }
         } catch (err) {
-            console.error('Error al validar tripulante:', err);
-            resetFicha();
-            fichaRole.textContent = 'Error de conexión con bitácora';
-            btnAccess.textContent = 'Iniciar Travesía';
+            if (err.name !== 'AbortError') {
+                console.error('Error al validar tripulante:', err);
+                if (!localCached) {
+                    resetFicha();
+                    fichaRole.textContent = 'Error de conexión con bitácora';
+                    btnAccess.textContent = 'Iniciar Travesía';
+                }
+            }
         } finally {
             webhookFetchInProgress = false;
         }
@@ -522,24 +759,77 @@
         }
 
         clearTimeout(searchDebounceTimer);
-        // Si tiene formato de email corporativo (@pjportland o @pjepoxa o @...), verificar automáticamente
-        if (value.includes('@') && value.indexOf('@') < value.length - 3) {
+        // Validar solo si tiene formato completo de correo para no sobrecargar el servidor
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (emailRegex.test(value)) {
             searchDebounceTimer = setTimeout(() => {
                 buscarYValidarTripulante(value);
-            }, 350);
+            }, 300);
         } else {
-            resetFicha();
+            // Si el correo está incompleto y teníamos un usuario cargado, resetear
+            if (currentUser && !value.includes('@')) {
+                resetFicha();
+            }
         }
     });
 
-    // Validación al presionar Enter en el input
+    // Validación inmediata al presionar Enter en el input
     input.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
             clearTimeout(searchDebounceTimer);
-            buscarYValidarTripulante(this.value.trim());
+            buscarYValidarTripulante(this.value.trim(), true);
         }
     });
+
+    // Manejo de chips de dominio rápido (+ @pjportland.cl, + @pjepoxa.cl)
+    document.querySelectorAll('.domain-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const domain = btn.getAttribute('data-domain');
+            let currentVal = input.value.trim();
+            if (currentVal.includes('@')) {
+                currentVal = currentVal.split('@')[0];
+            }
+            if (currentVal) {
+                input.value = currentVal + domain;
+                dropdown.style.display = 'none';
+                buscarYValidarTripulante(input.value, true);
+            } else {
+                input.focus();
+            }
+        });
+    });
+
+    // Reanudar sesión activa (Fast Re-Entry)
+    const btnResumeSession = document.getElementById('btnResumeSession');
+    if (btnResumeSession) {
+        btnResumeSession.addEventListener('click', () => {
+            if (currentUser && currentRole) {
+                redirectByRole(currentRole);
+            }
+        });
+    }
+
+    // Cambiar de cuenta desde la pantalla de bienvenida
+    const btnSwitchAccount = document.getElementById('btnSwitchAccount');
+    if (btnSwitchAccount) {
+        btnSwitchAccount.addEventListener('click', () => {
+            currentUser = null;
+            currentRole = null;
+            webhookVisaCache = null;
+            localStorage.removeItem('portland_user');
+            localStorage.removeItem('portland_role');
+            const activeCard = document.getElementById('activeSessionCard');
+            const manualSec = document.getElementById('manualLoginSection');
+            if (activeCard) activeCard.style.display = 'none';
+            if (manualSec) manualSec.style.display = 'block';
+            resetFicha();
+            const btnStart = document.getElementById('btnStart');
+            if (btnStart) btnStart.innerHTML = 'Comenzar Travesía';
+            input.value = '';
+            setTimeout(() => input.focus(), 80);
+        });
+    }
 
     btnAccess.addEventListener('click', async function() {
         // Si aún no se ha validado pero hay un email escrito en el input, validarlo primero

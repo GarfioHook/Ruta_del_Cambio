@@ -46,19 +46,108 @@ function getFlag(country) {
 }
 
 /**
+ * Recupera un usuario de la caché local del navegador (localStorage) para respuesta instantánea (0ms).
+ */
+function getLocalCachedUser(email) {
+    if (!email) return null;
+    const clean = email.trim().toLowerCase();
+    try {
+        const raw = localStorage.getItem('portland_cached_user_' + clean);
+        return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+/**
+ * Guarda el perfil en la caché local del navegador y en la lista de tripulantes recordados.
+ */
+function saveLocalCachedUser(email, responseData) {
+    if (!email || !responseData) return;
+    const clean = email.trim().toLowerCase();
+    try {
+        localStorage.setItem('portland_cached_user_' + clean, JSON.stringify(responseData));
+        
+        let crewList = [];
+        try {
+            crewList = JSON.parse(localStorage.getItem('portland_remembered_crew') || '[]');
+        } catch(e) {}
+        
+        const userObj = responseData.user || responseData;
+        const existingIdx = crewList.findIndex(c => (c.email || '').toLowerCase() === clean);
+        const crewEntry = {
+            email: clean,
+            name: formatName(userObj),
+            role: responseData.role || userObj.Rango || 'Tripulante',
+            avatar: responseData.avatar || userObj.Avatar || '',
+            alias: responseData.alias || userObj.Alias || '',
+            hasVisa: !!(responseData.hasVisa || (userObj['Visa de Zarpe'] && userObj['Visa de Zarpe'].toString().toLowerCase() === 'si')),
+            lastLogin: Date.now()
+        };
+        
+        if (existingIdx >= 0) {
+            crewList[existingIdx] = crewEntry;
+        } else {
+            crewList.unshift(crewEntry);
+        }
+        
+        // Mantener hasta 5 tripulantes frecuentes en este equipo
+        crewList = crewList.slice(0, 5);
+        localStorage.setItem('portland_remembered_crew', JSON.stringify(crewList));
+    } catch (e) {}
+}
+
+/**
+ * Retorna los tripulantes recordados en este equipo.
+ */
+function getRememberedCrew() {
+    try {
+        return JSON.parse(localStorage.getItem('portland_remembered_crew') || '[]');
+    } catch(e) {
+        return [];
+    }
+}
+
+/**
+ * Elimina un tripulante de los recordados.
+ */
+function removeRememberedCrew(email) {
+    if (!email) return;
+    const clean = email.trim().toLowerCase();
+    try {
+        localStorage.removeItem('portland_cached_user_' + clean);
+        let crewList = getRememberedCrew().filter(c => (c.email || '').toLowerCase() !== clean);
+        localStorage.setItem('portland_remembered_crew', JSON.stringify(crewList));
+    } catch(e) {}
+}
+
+/**
  * Consulta segura al backend de Google Apps Script para validar e identificar un usuario en Login.
+ * Soporta AbortSignal para cancelar peticiones intermedias mientras se escribe.
  * NO descarga la base de usuarios completa en el navegador; solo recupera la ficha del tripulante autenticado.
  */
-async function getUserFromBackend(email) {
+async function getUserFromBackend(email, signal = null, bypassCache = false) {
     if (!email) return { success: false, error: 'Email requerido' };
     try {
         const cleanEmail = email.trim().toLowerCase();
-        const url = `${PORTLAND_WEBHOOK_URL}?action=getUser&email=${encodeURIComponent(cleanEmail)}`;
-        const res = await fetch(url);
+        let url = `${PORTLAND_WEBHOOK_URL}?action=getUser&email=${encodeURIComponent(cleanEmail)}`;
+        if (bypassCache) url += '&fresh=1';
+        
+        const fetchOptions = {};
+        if (signal) fetchOptions.signal = signal;
+
+        const res = await fetch(url, fetchOptions);
         if (!res.ok) throw new Error('No se pudo conectar a la bitácora de navegación.');
         const data = await res.json();
+
+        if (data && data.success) {
+            saveLocalCachedUser(cleanEmail, data);
+        }
         return data;
     } catch (err) {
+        if (err.name === 'AbortError') {
+            return { success: false, aborted: true };
+        }
         console.error('Error al consultar usuario en backend:', err);
         return { success: false, error: err.message };
     }
@@ -82,7 +171,7 @@ async function loadAppData(forceRefresh = false) {
 
         const cacheKey = `portland_appdata_${email}_${viewAs}`;
         const cacheTimeKey = `portland_appdata_time_${email}_${viewAs}`;
-        const CACHE_TTL_MS = 5000; // 5 segundos para evitar peticiones duplicadas instantáneas
+        const CACHE_TTL_MS = 300000; // 5 minutos (300.000 ms) para evitar recargas continuas entre pantallas
         
         // Si no se fuerza refresco y la caché es reciente (< 5 segundos), usarla
         if (!forceRefresh) {
@@ -183,16 +272,13 @@ function saveSession(user, role) {
 /**
  * Borra la sesión (Logout).
  */
-/**
- * Borra la sesión (Logout).
- */
 function logout() {
     localStorage.removeItem('portland_user');
     localStorage.removeItem('portland_role');
     // Eliminar también claves globales heredadas
     localStorage.removeItem('portland_aliasUsuario');
     localStorage.removeItem('portland_avatarUsuario');
-    window.location.href = 'index.html';
+    window.location.href = 'index.html?logout=true';
 }
 
 /**
@@ -766,6 +852,11 @@ window.Core = {
     saveTrainerSession,
     getTrainerStatus,
     saveNormalUserEval,
-    getNormalUserEval
+    getNormalUserEval,
+    // Métodos de optimización de Login y Caché Local
+    getLocalCachedUser,
+    saveLocalCachedUser,
+    getRememberedCrew,
+    removeRememberedCrew
 };
 
