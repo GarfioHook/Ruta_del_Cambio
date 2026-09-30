@@ -555,9 +555,11 @@
         const user = Core.checkSession();
         if (!user) return;
 
+        let profile = Core.getProfile(user.Email);
+
         // --- ACTUALIZAR PLACA DE IDENTIFICACIÓN INMEDIATAMENTE (0ms) ---
         const renderBadge = (currentUser) => {
-            const profile = Core.getProfile(currentUser.Email);
+            profile = Core.getProfile(currentUser.Email);
             const displayAlias = document.getElementById('displayAlias');
             const displayName = document.getElementById('displayName');
             const displayAvatarImg = document.getElementById('displayAvatarImg');
